@@ -1,0 +1,4 @@
+
+Append to the last line of the main() function:
+
+gl_Position = vec4 (0.0);

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"></head><body bgcolor="#000000"><div xmlns="" style="position:relative; top:0px; left:0px; right:0px; padding-bottom:0px; margin-bottom:0px; margin-top:0px; z-index:99999; background-color:#ffffff;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-bottom:#c9d7f1 1px solid; background-color:#ffffff; border-collapse:collapse;">
+<tbody>
+</tbody></table>
+</div>
+
+<title>OpenGL3DVision Wrapper Documentation</title>
+<style>
+body {color:white;}
+h1 {color:red;}
+h3 {color:red;}
+p.ex {color:white;}
+
+p.pos_right
+{
+position:absolute;
+left:768px;
+}
+</style>
+
+<h3>Welcome</h3>
+<p>Welcome to the official documentation for "OpenGL3DVision" wrapper.</br>
+ For the latest news please visit: <a href="http://3dsurroundgaming.com/" target="_blank">3DSurroundGaming.com</a></p>
+
+ <h1>New in Version 1.50<br></h1>
+ <ul>
+ <li>New Features:</br>
+- Automatic Hooking Mode.</br>
+- Alternative Buffer Flipping Mode.</br>
+- Partial implementation of loading ARB Object Shaders (required by Minecraft). ShaderSource, Compile & Link to be done.</li>
+</br>
+<li>Updates:</br>
+- Updated the Shader Source Hooking algorithm as sometimes the shader source code was incomplete.</br>
+- Fixed some crashes when using the Debug Info option (for intercepting draw calls).</br>
+- Implemented Window Resize (still prototype phase as it crashes in multiple games).</li>
+ </ul>
+ 
+<h1>Feature List<br></h1>
+
+<ul>
+<li>Ability to log the wrapper functions.</li>
+</br>
+<li>[3D Vision Specific]</br>
+	- Ability to toggle 3D Vision Support ON/OFF (so you don't need to delete the wrapper files)</br>
+	- Ability to trace some of the OpenGL draw functions (Hooking points for the wrapper)</br>
+	- Ability to specify which hooking point to use</li>
+</br>
+<li>[3D Vision Automatic Enabling]</br>
+	- Ability to enable or disable the Stereoscopic Shader Injection (equivalent of 3D Vision Automatic)</br>
+	- Ability to specify up to 3 distinct Shader Stereoscopy Injection points and 3 distinct Shader Uniform Injection points</br>
+	- Ability to specify the Stereoscopic Injection function.</li>
+</br>
+<li>[Shader Compiler]</br>
+	- Automatic detection of Shader Compilation & Linking errors + full debug information.</br>
+	- Ability to select a pair of shaders between which the Stereocopy will not be applied (for hunting shaders down)</br>
+	- Ability to Change & Compile + Link a shader In real-time (so you can immediately see the difference)</br>
+	- Ability to dump all shaders as soon as they are created.</br>
+	- Ability to load own shaders during shader creation stage.</li>
+	<dl>Shader Support: Only GLSL is currently supported. No ARB Shaders support. (Please contact me if you want to help in this section)</dl>
+<li>[Alternative 3D Vision Settings]</br>
+	- Ability to query the current separation (depth) and convergence values that are being applied</br>
+	- Ability to bind a different convergence value to a keyboard key/mouse button (hold to work/ toggle mode)</li>
+</br>	
+<li>[FPS Frame cap Remover Support]</br>
+- Ability to write your own plugin that removes the FPS lock in a game.</li>
+</br>
+<li>[Wrapper Versions]</br>
+	- A Development version for creating a FIX.</br>
+	- A Public Release version for using a FIX.</li>
+</br>
+<li>Supported Platforms: </br>
+	- Windows 7(and above) x86(32 bits) and x64(64 bits).</li>
+</ul>
+
+<h1>Hot-Keys used for Developement</h1> 
+ <table border="1">
+	<tbody><tr>
+		<td align="center"><b>Keyboard Key :</b><br></td>
+		<td align="center"><b>Functionality :</b><br></td>
+	</tr>
+	<tr>
+		<td><i>[F8]</i></td>
+		<td><i>Shader Compiler:</i> Toggle between Vertex and Pixel Shader for the current selected Shader Program</td>		
+	</tr>
+	<tr>
+		<td><i>[F9]</i></td>
+		<td><i>Shader Compiler:</i> Compile & Link the Current Vertex or Pixel Shader for the current selected Shader Program</td>		
+	</tr>
+	<tr>
+		<td><i>[F10]</i></td>
+		<td>Show Current 3D Vision Settings: Separation/Depth and Convergence values that are being applied</td>		
+	</tr>
+	<tr>
+		<td><i>[CTRL] + [+]</i></td>
+		<td><i>Shader Compiler:</i> Select the Next Shader Program</td>		
+	</tr>
+	<tr>
+		<td><i>[CTRL] + [-]</i></td>
+		<td><i>Shader Compiler:</i> Select the Previous Shader Program</td>		
+	</tr>
+ </tbody></table>
+ 
+ <h1>Video Documentation</h1>
+ 
+ <table border="1">
+	<tr>		
+		<td align="left">
+		<ul>
+			 <li>1. Introduction </br>
+			- General Information about the tool.</br>
+			- How it works.</br>
+			- How it is made.</br>
+			- What modes are supported. </br>
+			- What OpenGL spec is supported.</br>
+			- Tool Versions.</li>
+			 </ul>
+		</td>
+		<td align="center"> <iframe width="640" height="480" src="http://www.youtube.com/embed/HQcvGUhe3ok?list=PLuJYxbcsAsR30igRbPzHj7wseQsU68483" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>2. Getting Started.</br>
+							- How to start fixing a game.</br>
+							- Hooking the wrapper with the game.</br>
+							- Enabling 3D Vision.</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/Pe9mUvuHiR8" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>3. Inserting Stereoscopy into a game.</br>
+							- General Shader information: used variables, used uniforms</br>
+							- Dumping the shaders</br>
+							- How to insert Stereoscopy into the shaders</br>
+							- The Stereo String "Magic"</br>
+							- Shader Compiling Status and Errors</br>
+							- Checking to see if all shaders are hooked</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/-VyRpnyR-1o" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>4. Finding shaders and Depth Hack Option</br>
+							- Shader Dump functionality</br>
+							- Depth Hack option</br>
+							- How to find a shader responsible for something</br>
+							- Using the Shader Pair function.</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/EnEVV5JAEEA" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>5. Adding Your Modified shaders and swap them at runtime.</br>
+							- Information about the two existing options </br>
+							(in swapping shaders) and how/WHY to use them.</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/R2PoDFw5tTg" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>6. Enabling the additional Convergence Preset.</br>
+							- How to get the convergence value that you want to use</br>
+							- How to bind a keyboard key or mouse button</br>
+							- Toggle or Hold to work description.</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/Q2W_UbHKcx4" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>[Advanced] 7. Fixing Shaders:</br>
+						- Using the Real-time shader Compiler to fix a shader.</br>
+						- Selecting the shader you want to start from.</br>
+						- Cycling through shader Programs</br>
+						- Select Between the Vertex and Fragment Shader</br>
+						- Re-compile the shader.</br>
+						- How does the Shader Compiler remembers the last source used.</br>
+						- New compiled shader generates a separate file.</br>
+						</br>
+						 Extra:</br>
+						- How to add Custom Convergence for the UI</br>
+						- How to add Automatic Convergence based on </br>
+						the scene position from the Camera</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/57lOXZikBnI" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left"><ul>
+						 <li>[HIGHLY Advanced] 8. FPS Injector:</br>
+						- General information about what it is.</br>
+						- How to use it.</li>
+						 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/e35lw6HdUUw" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+	<tr>
+		<td align="left">
+		 <ul>
+			 <li>9. Making A Fix Release.</br>
+			- Creating the Release configuration file.</br>
+			- Creating the nVidia Profile.</br>
+			- Using the Release Version of the wrapper.</br>
+			- Adding your custom LOGO.</li>
+			 </ul>
+		</td>
+		<td align="center"><iframe width="640" height="480" src="http://www.youtube.com/embed/Fj4LosD_hoE?list=PLuJYxbcsAsR30igRbPzHj7wseQsU68483" frameborder="0" allowfullscreen></iframe></td>
+	</tr>
+</table>
+ </br>
+ </br>
+ </br>
+  
+ 
+<p class="pos_right"> <i>All rights reserved. "OpenGL3DVision" @ www.3dsurroundgaming.com. Octavian Mihai Vasilovici a.k.a "Helifax". 2014.</i></p>
+
+
+
+</body></html>

@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{b0a3a7df-09f0-4771-8ad5-bae9439585ad}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Source Files\ShaderManager">
+      <UniqueIdentifier>{f936bc0e-2cf2-45eb-85d5-5c806c2af0c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ShaderManager\FPS_Fix">
+      <UniqueIdentifier>{12b43a76-6ac2-4845-8676-13ba8ef4f631}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ConfigReader">
+      <UniqueIdentifier>{c2d3f806-7236-4413-8dfc-89f7f1557495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\3DVision">
+      <UniqueIdentifier>{22136ee5-cd61-4e39-b7b8-54c63ed68697}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MessageBox">
+      <UniqueIdentifier>{03bc9728-281a-43db-9680-539ba845b40b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\ConfigReader.h">
+      <Filter>Source Files\ConfigReader</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gl_custom.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opengl_3dv.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opengl32.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ShaderManager.h">
+      <Filter>Source Files\ShaderManager</Filter>
+    </ClInclude>
+    <ClInclude Include="include\wgl_custom.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageBox\MessageBox.h">
+      <Filter>Source Files\MessageBox</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageBox\resource.h">
+      <Filter>Source Files\MessageBox</Filter>
+    </ClInclude>
+    <ClInclude Include="FPSInject\FPSInject.h">
+      <Filter>Source Files\ShaderManager\FPS_Fix</Filter>
+    </ClInclude>
+    <ClInclude Include="src\opengl32_ARB_Variant.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ConfigReader.cpp">
+      <Filter>Source Files\ConfigReader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl_custom.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+    <ClCompile Include="src\opengl_3dv.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+    <ClCompile Include="src\opengl32.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OtherOGL.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ShaderManager.cpp">
+      <Filter>Source Files\ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ShaderManagerCompiler.cpp">
+      <Filter>Source Files\ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wgl_custom.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageBox\MessageBox.cpp">
+      <Filter>Source Files\MessageBox</Filter>
+    </ClCompile>
+    <ClCompile Include="src\opengl32_ARB_Variant.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\opengl32.def">
+      <Filter>Source Files\3DVision</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="MessageBox\Logo.bmp">
+      <Filter>Source Files\MessageBox</Filter>
+    </Image>
+    <Image Include="MessageBox\LogoDev.bmp">
+      <Filter>Source Files\MessageBox</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MessageBox\Resource.rc">
+      <Filter>Source Files\MessageBox</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
