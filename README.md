@@ -63,7 +63,7 @@ Functionality :
 [CTRL] + [-]	Shader Compiler: Select the Previous Shader Program
 
 -------------------
-For latest BUILD and information go to: http://3dsurroundgaming.com/OpenGL3DVisionWrapper.html
+For latest BUILD and DOCUMENTATION go to: http://3dsurroundgaming.com/OGL3DVision.html
 -------------------
 
 
