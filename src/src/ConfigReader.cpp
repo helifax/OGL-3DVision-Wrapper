@@ -1,3 +1,4 @@
+#include <sstream>
 #include "ConfigReader.h"
 
 static std::string GetPath() 
@@ -142,6 +143,18 @@ configReader::configReader()
 
 					getline(configFile, configLine);
 				}
+				while ((foundLocation = configLine.find("DefaultConvergence")) != std::string::npos)
+				{
+					size_t position = configLine.find("= ");
+					std::string value = configLine.substr(position + 1);
+
+					// Read the default convergence
+					std::stringstream ss;
+					ss << std::hex << value;
+					ss >> m_defaultConvergence;
+
+					getline(configFile, configLine);
+				}
 				while ((foundLocation = configLine.find("AutomaticHookPoint")) != std::string::npos)
 				{
 					if (configLine.find("true") != std::string::npos)
@@ -206,7 +219,25 @@ configReader::configReader()
 				}
 			}
 
-			// [3D Settings]
+			// [Legacy_OpenGL_Calls]
+			if (configLine.find("[Legacy_OpenGL_Calls]") != std::string::npos)
+			{
+				//get the next line
+				getline(configFile, configLine);
+				if ((foundLocation = configLine.find("LegacyMode")) != std::string::npos)
+				{
+					if (configLine.find("false") != std::string::npos)
+					{
+						m_legacyOpenGL = false;
+					}
+					else if (configLine.find("true") != std::string::npos)
+					{
+						m_legacyOpenGL = true;
+					}
+				}
+			}
+
+			//[Alternative_3D_Settings]
 			if (configLine.find("[Alternative_3D_Settings]") != std::string::npos)
 			{
 				//get the next line
@@ -227,7 +258,7 @@ configReader::configReader()
 				{
 					size_t position = configLine.find("= ");
 					std::string value = configLine.substr(position + 1);
-					
+
 					// Read the key
 					m_altKey = std::stoul(value, nullptr, 16);
 				}

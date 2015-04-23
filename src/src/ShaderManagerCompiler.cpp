@@ -7,10 +7,13 @@
 #include <thread>
 #include "opengl32.h"
 
+extern "C" {
+#include "opengl_3dv.h"
+}
+
 extern funct_glGetShaderiv_t orig_glGetShader;
 extern funct_glGetShaderiv_t orig_glGetShader;
 extern funct_glShaderSource_t orig_glShaderSource;
-extern bool g_init;
 
 #ifdef DEBUG_WRAPPER
 extern int debugShaderIndex;
@@ -27,7 +30,7 @@ bool ShaderManager::ApplyDebugExceptionShaders(void)
 {
 	bool isSet = false;
 
-	if (g_init == false && isCompileEnable)
+	if (NV3DVisionIsNotInit() && isCompileEnable)
 	{
 		int shaderProgramIndex = 0;
 		if ((shaderProgramIndex = ShaderProgramFound(debugShaderIndex)) != -1)

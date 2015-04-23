@@ -52,6 +52,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	 bool isLegacyOpenGLEnabled()
+	 {
+		 return m_legacyOpenGL;
+	 }
+	 // ---------------------------------------------------------------------------------------------
+
 	 bool GetKeyToggleMode()
 	{
 		return m_enableToggleMode;
@@ -88,6 +94,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	inline void Set3DVisionEnabledStatus(bool newStatus)
+	{
+		m_3dVisionEnabled = newStatus;
+	}
+	// ---------------------------------------------------------------------------------------------
+
 	bool GetWindowModeEnabled()
 	{
 		return m_windowModeEnabled;
@@ -112,6 +124,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	unsigned int GetDefaultConvergence()
+	{
+		return m_defaultConvergence;
+	}
+	// ---------------------------------------------------------------------------------------------
+
 private:
 	//Log
 	bool m_enableSplashScreen;
@@ -125,14 +143,17 @@ private:
 	bool m_windowResizeEnabled;
 	std::string m_injectionPoint;
 	bool m_automaticInjectionPoint;
-
 	bool m_enableVertexStereoInjection;
+
+	// OpenGL Legacy Code Flag
+	bool m_legacyOpenGL;
 
 	//3D Settings specific
 	bool m_enableToggleMode;
 	int m_altKey;
 	float m_altConvergence;
 	float m_depthFactor;
+	unsigned int m_defaultConvergence;
 
 };
 

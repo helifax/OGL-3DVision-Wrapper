@@ -45,6 +45,7 @@
     <ClCompile Include="MessageBox\MessageBox.cpp" />
     <ClCompile Include="src\ConfigReader.cpp" />
     <ClCompile Include="src\gl_custom.cpp" />
+    <ClCompile Include="src\NvApiProfileSettings.cpp" />
     <ClCompile Include="src\opengl32.cpp" />
     <ClCompile Include="src\opengl32_ARB_Variant.cpp" />
     <ClCompile Include="src\opengl_3dv.cpp" />

@@ -13,7 +13,7 @@ extern "C" {
 #include "include\ShaderManager.h"
 #include "windows.h"
 #include "d3d9.h"
-#include "NVAPI_337\nvapi.h"
+#include "NVAPI_343\nvapi.h"
 #include <thread>
 #include "FPSInject/FPSInject.h"
 #include "MessageBox\MessageBox.h"

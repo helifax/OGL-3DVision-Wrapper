@@ -1,9 +1,6 @@
 
 #include "opengl32_ARB_Variant.h"
 
-// Global Frame Count
-extern unsigned int frameCall;
-
 // Currently ShaderSource ARB Variant returns junk characters at the end of the string.....
 
 // Add the stereo values
@@ -51,7 +48,7 @@ void sys_glUseProgramObjectARB(GLhandleARB program)
 		GLint location_convergence = (*orig_glGetUniformLocation)(program, uniform_convergence);
 
 		//set the uniform inside the shaders
-		if (frameCall == 1)
+		if (NV3DVisionGetCurrentFrame() == 1)
 		{
 			//left eye
 			value = -1.0f;

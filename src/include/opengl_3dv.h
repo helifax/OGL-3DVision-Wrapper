@@ -35,6 +35,9 @@ typedef struct struct_GLD3DBuffers
 	void *nvStereo;
 } GLD3DBuffers;
 
+// NvApi Profiles
+void NvApi_3DVisionProfileSetup();
+
 void GLD3DBuffers_create(GLD3DBuffers *gl_d3d_buffers, void *window_handle, bool stereo);
 void GLD3DBuffers_destroy(GLD3DBuffers *gl_d3d_buffers);
 
@@ -54,6 +57,12 @@ void GLD3DBuffers_activate_right(GLD3DBuffers *gl_d3d_buffers);
 void GLD3DBuffers_deactivate_left(GLD3DBuffers *gl_d3d_buffers);
 void GLD3DBuffers_deactivate_right(GLD3DBuffers *gl_d3d_buffers);
 
+/// 3D Vision Initialisation
+bool NV3DVisionIsNotInit();
+void NV3DVisionSetInit(void);
+void NV3DVisionSetCurrentFrame(unsigned int frameNumber);
+unsigned int NV3DVisionGetCurrentFrame(void);
+
 //// NVAPI 3D Vision Values
 void Set3DSeparation(float value);
 void Set3DConvergence(float value);
@@ -66,5 +75,7 @@ float Get3DEyeSeparation();
 //// OpenGL-DirectX interoop state
 void SetInterop(bool state);
 BOOL GetInterop(void);
+
+
 
 #endif

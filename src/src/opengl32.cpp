@@ -14,7 +14,7 @@ extern "C" {
 #include "include\ShaderManager.h"
 #include "windows.h"
 #include "d3d9.h"
-#include "NVAPI_337\nvapi.h"
+#include "NVAPI_343\nvapi.h"
 #include <thread>
 #include "FPSInject/FPSInject.h"
 #include "MessageBox\MessageBox.h"
@@ -33,11 +33,6 @@ static bool isFPSInjectHandleValid(void);
 
 // Our object
 FPSInject* m_FPSInjector;
-
-// Used in init and rendering
-bool g_init = true;
-unsigned int frameCall = 0;
-
 
 unsigned int g_width = 0;
 unsigned int g_height = 0;
@@ -157,12 +152,12 @@ void sys_glBindFramebuffer(GLenum target, GLuint framebuffer)
 		// We are rendering the left frame, so let it run natively
 		if (framebuffer == GLuint(0) && GetInterop() == false)
 		{
-			if ((frameCall == 1))
+			if ((NV3DVisionGetCurrentFrame() == 1))
 			{
 				GLD3DBuffers_activate_depth(gl_d3d_buffers);
 				GLD3DBuffers_activate_left(gl_d3d_buffers);
 			}
-			else if ((frameCall == 2))
+			else if ((NV3DVisionGetCurrentFrame() == 2))
 			{
 
 				GLD3DBuffers_activate_right(gl_d3d_buffers);
@@ -187,7 +182,7 @@ void sys_glBindFramebuffer(GLenum target, GLuint framebuffer)
 static void bindFrameBufferSwap(void)
 {
 	//initializes
-	if (g_init)
+	if (NV3DVisionIsNotInit())
 	{
 		//Start our window resize checker thread if the mode is enabled.
 		if (g_reader->GetWindowResizeEnabled())
@@ -206,10 +201,9 @@ static void bindFrameBufferSwap(void)
 
 		handle = GetActiveWindow();
 		GLD3DBuffers_create(gl_d3d_buffers, handle, true);
-		g_init = false;
 
 		//start the rendering
-		frameCall = 1;
+		NV3DVisionSetCurrentFrame(1);
 		add_log("3D Vision successfully initialised !");
 
 		// FPS Inject
@@ -219,24 +213,24 @@ static void bindFrameBufferSwap(void)
 		}
 	}
 
-	else if (frameCall == 1)
+	else if (NV3DVisionGetCurrentFrame() == 1)
 	{
 		// Sync Left eye
 		if (isFPSInjectHandleValid())
 		{
 			m_FPSInjector->syncLeft();
 		}
-		frameCall = 2;
+		NV3DVisionSetCurrentFrame(2);
 
 	}
-	else if (frameCall == 2)
+	else if (NV3DVisionGetCurrentFrame() == 2)
 	{
 		// Sync Right eye
 		if (isFPSInjectHandleValid())
 		{
 			m_FPSInjector->syncRight();
 		}
-		frameCall = 1;
+		NV3DVisionSetCurrentFrame(1);
 
 		// both eyes are rendered. So swap buffers and reset counter
 		//Flip the framebuffers vetically
@@ -268,11 +262,11 @@ static void bindFrameBufferSwap(void)
 // buffer swapping on SwapBuffer
 static void swapBuffersSwap(void)
 {
-	if (frameCall == 0)
+	if (NV3DVisionGetCurrentFrame() == 0)
 	{
 
 		// Initialize the WRAPPER!!! BANG BANG! 3D Vision Active baby!!!!
-		if (g_init)
+		if (NV3DVisionIsNotInit())
 		{
 			//Start our window resize checker thread if the mode is enabled.
 			if (g_reader->GetWindowResizeEnabled())
@@ -292,7 +286,6 @@ static void swapBuffersSwap(void)
 
 			handle = GetActiveWindow();
 			GLD3DBuffers_create(gl_d3d_buffers, handle, true);
-			g_init = false;
 
 			add_log("3D Vision successfully initialised !");
 
@@ -328,7 +321,7 @@ static void swapBuffersSwap(void)
 			}
 
 			//start the rendering
-			frameCall = 1;
+			NV3DVisionSetCurrentFrame(1);
 			//activate left buffer so everything is copied in it
 			GLD3DBuffers_activate_depth(gl_d3d_buffers);
 			GLD3DBuffers_activate_left(gl_d3d_buffers);
@@ -340,10 +333,10 @@ static void swapBuffersSwap(void)
 			}
 		}
 	}
-	else if (frameCall == 1)
+	else if (NV3DVisionGetCurrentFrame() == 1)
 	{
 		//activate right buffer so everything is copied in it
-		frameCall = 0;
+		NV3DVisionSetCurrentFrame(0);
 		GLD3DBuffers_activate_right(gl_d3d_buffers);
 
 		// Sync RIGHT eye
@@ -544,7 +537,7 @@ void sys_glUseProgram(GLuint program)
 			GLint location_convergence = (*orig_glGetUniformLocation)(program, uniform_convergence);
 
 			//set the uniform inside the shaders
-			if (frameCall == 1)
+			if (NV3DVisionGetCurrentFrame() == 1)
 			{
 				//left eye
 				value = -1.0f;
@@ -790,7 +783,7 @@ static void EndFrames(void)
 static void AutomaticGlSwapBuffers(void)
 {
 	//initializes
-	if (g_init)
+	if (NV3DVisionIsNotInit())
 	{
 		//Start our window resize checker thread if the mode is enabled.
 		if (g_reader->GetWindowResizeEnabled())
@@ -809,11 +802,9 @@ static void AutomaticGlSwapBuffers(void)
 
 		handle = GetActiveWindow();
 		GLD3DBuffers_create(gl_d3d_buffers, handle, true);
-		g_init = false;
 
 		//start the rendering
-		frameCall = 1;
-		add_log("3D Vision successfully initialized !");
+		NV3DVisionSetCurrentFrame(1);
 
 		// FPS Inject
 		if (isFPSInjectHandleValid())
@@ -821,43 +812,47 @@ static void AutomaticGlSwapBuffers(void)
 			m_FPSInjector->synchronizeRendering();
 		}
 	}
-	if (frameCall == 2)
+	// If we are initialised
+	if (!NV3DVisionIsNotInit())
 	{
-		EndFrames();
-		GLD3DBuffers_activate_depth(gl_d3d_buffers);
-		GLD3DBuffers_activate_left(gl_d3d_buffers);
-		frameCall = 1;
+		if (NV3DVisionGetCurrentFrame() == 2)
+		{
+			EndFrames();
+			GLD3DBuffers_activate_depth(gl_d3d_buffers);
+			GLD3DBuffers_activate_left(gl_d3d_buffers);
+			NV3DVisionSetCurrentFrame(1);
 
-		// Sync Left eye
-		if (isFPSInjectHandleValid())
-		{
-			m_FPSInjector->syncLeft();
-		}
-	}
-	else if (frameCall == 1)
-	{
-		// Sync Right eye
-		if (isFPSInjectHandleValid())
-		{
-			m_FPSInjector->syncRight();
-		}
-
-		if (!g_windowResizeCheck)
-		{
-			std::string injectionPoint = g_reader->GetInjectionPoint();
-			if (injectionPoint != "glSwapBuffers" && injectionPoint != "SCREEN_BUFFER")
+			// Sync Left eye
+			if (isFPSInjectHandleValid())
 			{
-				GLD3DBuffers_flip_left(gl_d3d_buffers);
-			}
-			else if (injectionPoint == "SCREEN_BUFFER")
-			{
-				GLD3DBuffers_copy_left(gl_d3d_buffers);
+				m_FPSInjector->syncLeft();
 			}
 		}
-		GLD3DBuffers_deactivate_left(gl_d3d_buffers);
-		GLD3DBuffers_activate_right(gl_d3d_buffers);
+		else if (NV3DVisionGetCurrentFrame() == 1)
+		{
+			// Sync Right eye
+			if (isFPSInjectHandleValid())
+			{
+				m_FPSInjector->syncRight();
+			}
 
-		frameCall = 2;
+			if (!g_windowResizeCheck)
+			{
+				std::string injectionPoint = g_reader->GetInjectionPoint();
+				if (injectionPoint != "glSwapBuffers" && injectionPoint != "SCREEN_BUFFER")
+				{
+					GLD3DBuffers_flip_left(gl_d3d_buffers);
+				}
+				else if (injectionPoint == "SCREEN_BUFFER")
+				{
+					GLD3DBuffers_copy_left(gl_d3d_buffers);
+				}
+			}
+			GLD3DBuffers_deactivate_left(gl_d3d_buffers);
+			GLD3DBuffers_activate_right(gl_d3d_buffers);
+
+			NV3DVisionSetCurrentFrame(2);
+		}
 	}
 }
 ///-------------------------------------------------------------------------------------------

@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <direct.h>
 #include "opengl32.h"
+extern "C" {
+#include "opengl_3dv.h"
+}
 
 
 extern funct_glGetShaderiv_t orig_glGetShader;
 extern funct_glGetShaderiv_t orig_glGetShader;
 extern funct_glShaderSource_t orig_glShaderSource;
-extern bool g_init;
 static bool m_allShadersApplied = false;
 extern configReader *g_reader;
 
@@ -588,7 +590,7 @@ std::string ShaderManager::getShaderSource(GLuint shaderId)
 			}
 		}
 
-		if (g_init == false && m_allShadersApplied == false)
+		if (NV3DVisionIsNotInit() && m_allShadersApplied == false)
 		{
 			for (size_t j = 0; j < m_existingShaders.size(); j++)
 			{

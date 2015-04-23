@@ -1104,11 +1104,13 @@ void sys_glLoadIdentity (void)
 
 void sys_glLoadMatrixd (const GLdouble *m)
 {
+	// TO DO: Enable Legacy Mode here as well
 	(*orig_glLoadMatrixd) (m);
 }
 
 void sys_glLoadMatrixf (const GLfloat *m)
 {
+	// TO DO: Enable Legacy Mode here as well
 	(*orig_glLoadMatrixf) (m);
 }
 
@@ -1181,10 +1183,57 @@ void sys_glMaterialiv (GLenum face,  GLenum pname,  const GLint *params)
 {
 	(*orig_glMaterialiv) (face, pname, params);
 }
+static GLenum m_previousMatrixMode = GL_PROJECTION;
 
+// Altering Projection Matrix for stereo correction
 void sys_glMatrixMode (GLenum mode)
 {
-	(*orig_glMatrixMode) (mode);
+	// If we are in Legacy OpenGL Calls
+	if (g_reader->isLegacyOpenGLEnabled())
+	{
+		if (!NV3DVisionIsNotInit())
+		{
+			// If the Previous Mode was in GL_Projection
+			// We need to get the current Projection Matrix and correct it for stereo
+			// We need to do this only after we finished with the Projection Matrix so we are in another mode.   
+			if ((m_previousMatrixMode == GL_PROJECTION) && (mode != GL_PROJECTION))
+			{
+				GLfloat currentSeparation = Get3DEyeSeparation();
+				GLfloat currentConvergence = Get3DConvergence();
+				GLfloat mCurrentProj[16] = { 0 };
+
+				// Get the current Projection matrix
+				glGetFloatv(GL_PROJECTION_MATRIX, mCurrentProj);
+
+				// Left Eye
+				if (NV3DVisionGetCurrentFrame() == 1)
+				{
+					// Apply the stereo correction for Current Eye
+					mCurrentProj[8] += currentSeparation;
+					mCurrentProj[12] += currentSeparation * currentConvergence;
+				}
+				// Right Eye
+				else if (NV3DVisionGetCurrentFrame() == 2)
+				{
+					// Apply the stereo correction for Current Eye
+					mCurrentProj[8] -= currentSeparation;
+					mCurrentProj[12] -= currentSeparation * currentConvergence;
+				}
+
+				// Load it back
+				glLoadMatrixf(mCurrentProj);
+			}
+			// Store the mode in which the matrix is currently set
+			m_previousMatrixMode = mode;
+		}
+		// And Run the original code
+		(*orig_glMatrixMode)(mode);
+	}
+	else
+	{
+		// Normal mode
+		(*orig_glMatrixMode) (mode);
+	}
 }
 
 void sys_glMultMatrixd (const GLdouble *m)
@@ -4385,12 +4434,56 @@ void sys_glEnd(void)
 
 void sys_glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
+	// TO DO: Enable Legacy Mode here as well
 	(*orig_glFrustum) (left, right, bottom, top, zNear, zFar);
 }
 
 void sys_glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-	(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
+	// If we are in Legacy OpenGL Calls
+	if (g_reader->isLegacyOpenGLEnabled())
+	{
+		if (!NV3DVisionIsNotInit())
+		{
+			// If the Previous Mode was in GL_Projection
+			// We need to get the current Projection Matrix and correct it for stereo
+			// We need to do this only after we finished with the Projection Matrix so we are in another mode.   
+			if (m_previousMatrixMode == GL_PROJECTION)
+			{
+				GLfloat currentSeparation = Get3DEyeSeparation();
+				GLfloat currentConvergence = Get3DConvergence();
+				GLfloat mCurrentProj[16] = { 0 };
+
+				// Get the current Projection matrix
+				glGetFloatv(GL_PROJECTION_MATRIX, mCurrentProj);
+
+				// Left Eye
+				if (NV3DVisionGetCurrentFrame() == 1)
+				{
+					// Remove the stereo correction for Current Eye as we are in Ortho Projection
+					mCurrentProj[8] -= currentSeparation;
+					mCurrentProj[12] -= currentSeparation * currentConvergence;
+				}
+				// Right Eye
+				else if (NV3DVisionGetCurrentFrame() == 2)
+				{
+					// Remove the stereo correction for Current Eye as we are in Ortho Projection
+					mCurrentProj[8] += currentSeparation;
+					mCurrentProj[12] += currentSeparation * currentConvergence;
+				}
+
+				// Load it back
+				glLoadMatrixf(mCurrentProj);
+			}
+		}
+		// And Run the original code
+		(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
+	}
+	else
+	{
+		// Normal mode
+		(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
+	}
 }
 
 void sys_glPopMatrix(void)
