@@ -1,6 +1,30 @@
 # OGL-3DVision-Wrapper
 OpenGL Wrapper to enable 3D Vision Support under Windows
 
+-------------------------
+NEW IN VERSION 2.00 BETA
+-------------------------
+
+
+New Features:
+- Added ability to enable/disable Legacy OpenGL calls for modifying the projection matrix and adding stereoscopy.(More functions require detouring.)
+- Added ability to work on Aurora Engine games (Star Wars: Kotor 1 & 2).
+- Added ability to get the Nvidia Profile associated with the game (via NVAPI) and enable 3D Vision compatibility:
+a. If a profile does not exist, the wrapper will generate a profile. (Name of Profile :"app.exe-3D Vision Wrapper".) 
+b. If a profile exists, the wrapper will add the 3D Vision flags.
+c. If the Nvidia driver is reinstalled, the wrapper will automatically detect this and apply the correct profile again.
+- Added Default Convergence Setting in the ini file. It is set when the profile is created initially.
+- Added Ability to read and apply a Game Profile (from a Profile.nip file). It is set when the profile is updated initially. (The Application will require a restart in order for the settings to take effect.)
+
+Updates:
+- Updated to NVAPI 343.
+- Added Thread Safety in the NVAPI threads.
+- Updated Windows Version Query Mechanism from a legacy one as there were problems with correct initialization of the 3D Vision driver.
+- Updated the Wrapper so it doesn't crash if/when 3D Vision is not present/disabled in NVPanel.
+- Fixed other various crashes that appeared on improper initialization.
+- Updated the Log Generation with additional information.
+
+
 
 -------------------
 NEW IN VERSION 1.50
