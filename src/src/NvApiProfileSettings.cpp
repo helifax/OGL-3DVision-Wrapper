@@ -506,6 +506,7 @@ static bool NvApi_ApplyProfileFromFile(NvDRSSessionHandle hSession, NvDRSProfile
 	{
 		for (settingSize = 0; settingSize < m_settingFromFile.size(); settingSize++)
 		{
+			// If we can add all the settings
 			if (status == NVAPI_OK)
 			{
 				NVDRS_SETTING setNewSettings;
@@ -516,6 +517,9 @@ static bool NvApi_ApplyProfileFromFile(NvDRSSessionHandle hSession, NvDRSProfile
 				setNewSettings.u32CurrentValue = m_settingFromFile[settingSize].settingValue;
 				status = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
 			}
+			else
+				// something went wrong so abort
+				break;
 		}
 
 		// Did we load all the settings?

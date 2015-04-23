@@ -84,6 +84,9 @@
     <ClCompile Include="src\opengl32_ARB_Variant.cpp">
       <Filter>Source Files\3DVision</Filter>
     </ClCompile>
+    <ClCompile Include="src\NvApiProfileSettings.cpp">
+      <Filter>Source Files\3DVision</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="include\opengl32.def">
