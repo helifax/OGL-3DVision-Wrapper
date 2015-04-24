@@ -897,13 +897,9 @@ BOOL __stdcall DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 		// Splash Screen enabled?
 		if (g_reader->GetEnableSplashScreen())
 		{
-			// MY custom message BOX
-			//CustomMessageBox(NULL, _T("  \t\t\t\t\t\t                   \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"),
-				//_T("OpenGL-3D Vision Wrapper: Wolfenstein: The New Order"), MB_OK);
-			
 			// SDK Message box
 			CustomMessageBox(NULL, _T("  \t\t\t\t\t\t               \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"),
-				_T("OpenGL3DVision Wrapper v.1.50"), MB_OK);
+				_T("OpenGL3DVision Wrapper v.2.00 Beta"), MB_OK);
 		}
 		// Init the wrapper
 		LoadFPSInject();

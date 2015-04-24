@@ -30,7 +30,7 @@ bool ShaderManager::ApplyDebugExceptionShaders(void)
 {
 	bool isSet = false;
 
-	if (NV3DVisionIsNotInit() && isCompileEnable)
+	if (!NV3DVisionIsNotInit() && isCompileEnable)
 	{
 		int shaderProgramIndex = 0;
 		if ((shaderProgramIndex = ShaderProgramFound(debugShaderIndex)) != -1)

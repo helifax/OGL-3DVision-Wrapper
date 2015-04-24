@@ -4,6 +4,11 @@ Data: 24.94.2015
 
 Interface to NVAPI to handle profile modification/creation in order for 3D Vision to render Properly!
 */
+// <SettingID>271830721</SettingID> - is Predefined SLI Mode
+// <SettingID>271834322</SettingID> - is GPU Count
+// <SettingID>278257400</SettingID> - SLi Bits DX9
+// 1888336069 - is Convergence
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,6 +38,23 @@ static void NvApi_ReadProfile(void);
 static bool NvApi_ApplyProfileFromFile(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile);
 static void _getProfileName(const char* inExeName, char* outProfileName);
 static void _getApplicationName(char *exePath);
+
+typedef struct
+{
+	unsigned int settingId;
+	unsigned int settingValue;
+} NVAPI_SETTINGS_T;
+
+static std::vector<std::string> m_exeFromFile;
+static std::vector<NVAPI_SETTINGS_T> m_settingFromFile;
+
+static std::string GetPath()
+{
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+	return std::string(buffer).substr(0, pos);
+}
 
 static void PrintError(NvAPI_Status status)
 {
@@ -83,6 +105,10 @@ void NvApi_3DVisionProfileSetup()
 			if (NvApi_Enable3DVisionSetting(hSession, hProfile))
 			{
 				add_log("Game profile existing/updated with the 3D Vision flag !!!");
+			}
+			else
+			{
+				add_log("Cannot updated  the existing profile with the 3D Vision flag !!!");
 			}
 			break;
 		}
@@ -224,10 +250,35 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 			// Find the setting related to 3D Vision Window Mode support
 			if (setArray[i].settingId == 0x701EB457)
 			{
-				// Setting found. Nothing to do as profile already exists.
+				add_log("3D Vision Profile value found and is already set!");
+				// If we force the profile
+				if (g_reader->IsNVProfileForced())
+				{
+					// Read the profile file.
+					NvApi_ReadProfile();
+					if (m_settingFromFile.size() != 0)
+					{
+						// Add the settings
+						if (NvApi_ApplyProfileFromFile(hSession, hProfile))
+						{
+							add_log("Setting Successfully imported from Profile.nip");
+							
+							if (NvAPI_DRS_SaveSettings(hSession) != NVAPI_OK)
+								add_log("Cannot save profile. Error code: %d", status);
+						}
+						else
+						{
+							add_log("Cannot import settings from Profile.nip");
+						}
+					}
+					else
+					{
+						add_log("Cannot read Profile.nip file. Abort the import...");
+					}
+				}
 				// cleanup
-				delete(setArray);
 				fixed = true;
+				delete(setArray);
 				break;
 			}
 		}
@@ -236,10 +287,17 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 		{
 			// Read the profile file.
 			NvApi_ReadProfile();
-			// Add the settings
-			if (NvApi_ApplyProfileFromFile(hSession, hProfile))
+			if (m_settingFromFile.size() != 0)
 			{
-				add_log("Setting Successfully imported from Profile.nip");
+				// Add the settings
+				if (NvApi_ApplyProfileFromFile(hSession, hProfile))
+				{
+					add_log("Setting Successfully imported from Profile.nip");
+				}
+				else
+				{
+					add_log("Cannot import settings from Profile.nip");
+				}
 			}
 
 			// We didn't find our value so we need to set it.
@@ -264,7 +322,14 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 			{
 				// Save settings to the driver
 				status = NvAPI_DRS_SaveSettings(hSession);
-				fixed = true;
+				if (status == NVAPI_OK)
+					fixed = true;
+				else
+					add_log("Cannot save profile. Error code: %d", status);
+			}
+			else
+			{
+				add_log("Cannot save profile. Error code: %d", status);
 			}
 			// Delete the array
 			delete(setArray);
@@ -314,10 +379,17 @@ static bool NvApi_LoadDefaultProfile(NvDRSSessionHandle hSession)
 		{
 			// Read the profile file.
 			NvApi_ReadProfile();
-			// Add the settings
-			if (NvApi_ApplyProfileFromFile(hSession, returnNewProfile))
+			if (m_settingFromFile.size() != 0)
 			{
-				add_log("Setting Successfully imported from Profile.nip");
+				// Add the settings
+				if (NvApi_ApplyProfileFromFile(hSession, returnNewProfile))
+				{
+					add_log("Setting Successfully imported from Profile.nip");
+				}
+				else
+				{
+					add_log("Cannot import settings from Profile.nip");
+				}
 			}
 
 			// Create our new setting
@@ -342,7 +414,11 @@ static bool NvApi_LoadDefaultProfile(NvDRSSessionHandle hSession)
 			{
 				// Save settings to the driver
 				status = NvAPI_DRS_SaveSettings(hSession);
-				return true;
+				if (status == NVAPI_OK)
+					return true;
+				else
+					add_log("Cannot save profile. Error code: %d", status);
+				return false;
 			}
 			return false;
 		}
@@ -428,22 +504,6 @@ static void _getApplicationName(char *exePath)
 //////////////////////////////////////////////////////////////////////////
 // Importing a profile from a file
 //////////////////////////////////////////////////////////////////////////
-
-typedef struct
-{
-	unsigned int settingId;
-	unsigned int settingValue;
-} NVAPI_SETTINGS_T;
-
-static std::vector<NVAPI_SETTINGS_T> m_settingFromFile;
-
-static std::string GetPath()
-{
-	char buffer[MAX_PATH];
-	GetModuleFileName(NULL, buffer, MAX_PATH);
-	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
-	return std::string(buffer).substr(0, pos);
-}
 // -----------------------------------------------------------------------------------
 
 // Read nip file
@@ -457,10 +517,29 @@ static void NvApi_ReadProfile(void)
 	//file is opened
 	if (profileFile.is_open())
 	{
+		m_exeFromFile.resize(0);
+		m_settingFromFile.resize(0);
 		// read one line at a time
 		while (getline(profileFile, profileLine))
 		{
-			if (profileLine.find("<ProfileSetting>") != std::string::npos)
+			// executables from profile
+			if (profileLine.find("<Executeables>") != std::string::npos)
+			{
+				getline(profileFile, profileLine);
+
+				if ((position = profileLine.find("<string>")) != std::string::npos)
+				{
+					size_t endPosition = profileLine.find("</string>");
+					size_t buffSize = endPosition - (position + strlen("<string>"));
+					std::string exeName = profileLine.substr((position + strlen("<string>")), buffSize);
+
+					// Read the exe name
+					m_exeFromFile.push_back(exeName);
+				}
+			}
+
+			// settings from profile
+			else if (profileLine.find("<ProfileSetting>") != std::string::npos)
 			{
 				NVAPI_SETTINGS_T settings = {0};
 				getline(profileFile, profileLine);
@@ -488,10 +567,13 @@ static void NvApi_ReadProfile(void)
 					m_settingFromFile.push_back(settings);
 				}
 			}
-			getline(profileFile, profileLine);
 			//----------------------------------------------
 		}
 		profileFile.close();
+	}
+	else
+	{
+		add_log("Cannot read Profile.nip file...");
 	}
 }
 
@@ -499,15 +581,39 @@ static void NvApi_ReadProfile(void)
 static bool NvApi_ApplyProfileFromFile(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 {
 	NvAPI_Status status = NVAPI_OK;
+	NvAPI_Status status1 = NVAPI_OK;
 	size_t settingSize = 0;
+	size_t exeSize = 0;
 	
 	// Did we read settings from file ?
+	
+	// Executables
+	if (m_exeFromFile.size() != 0)
+	{
+		for (exeSize = 0; exeSize < m_exeFromFile.size(); exeSize++)
+		{
+			if (status == NVAPI_OK)
+			{
+				NVDRS_APPLICATION setNewExe;
+				// Add the values from the profile
+				setNewExe.version = NVDRS_APPLICATION_VER;
+				NvApi_SetUnicodeString(setNewExe.appName, m_exeFromFile[exeSize].c_str());
+				NvApi_SetUnicodeString(setNewExe.userFriendlyName, m_exeFromFile[exeSize].c_str());
+				status = NvAPI_DRS_CreateApplication(hSession, hProfile, &setNewExe);
+			}
+			else
+			{
+				add_log("Cannot Apply Application %s", m_exeFromFile[exeSize - 1].c_str());
+			}
+		}
+	}
+
+	// Settings
 	if (m_settingFromFile.size() != 0)
 	{
 		for (settingSize = 0; settingSize < m_settingFromFile.size(); settingSize++)
 		{
-			// If we can add all the settings
-			if (status == NVAPI_OK)
+			if (status1 == NVAPI_OK)
 			{
 				NVDRS_SETTING setNewSettings;
 				// Add the values from the profile
@@ -515,15 +621,19 @@ static bool NvApi_ApplyProfileFromFile(NvDRSSessionHandle hSession, NvDRSProfile
 				setNewSettings.settingId = m_settingFromFile[settingSize].settingId;
 				setNewSettings.settingType = NVDRS_DWORD_TYPE;
 				setNewSettings.u32CurrentValue = m_settingFromFile[settingSize].settingValue;
-				status = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
+				status1 = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
 			}
 			else
-				// something went wrong so abort
-				break;
+			{
+				add_log("Cannot Apply Setting %d", m_settingFromFile[settingSize-1].settingId);
+			}
 		}
 
 		// Did we load all the settings?
-		if ((status == NVAPI_OK) && (settingSize == m_settingFromFile.size()))
+		if (
+			( (status == NVAPI_OK) && (settingSize == m_settingFromFile.size()) ) ||
+			( (status1 == NVAPI_OK) && (exeSize == m_exeFromFile.size()) )
+			)
 		{
 			return true;
 		}

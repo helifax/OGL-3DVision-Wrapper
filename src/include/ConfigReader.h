@@ -130,6 +130,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	bool IsNVProfileForced()
+	{
+		return m_forceNvProfileLoad;
+	}
+	// ---------------------------------------------------------------------------------------------
+
 private:
 	//Log
 	bool m_enableSplashScreen;
@@ -154,6 +160,7 @@ private:
 	float m_altConvergence;
 	float m_depthFactor;
 	unsigned int m_defaultConvergence;
+	bool m_forceNvProfileLoad;
 
 };
 

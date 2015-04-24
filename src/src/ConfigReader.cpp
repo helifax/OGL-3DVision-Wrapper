@@ -155,6 +155,18 @@ configReader::configReader()
 
 					getline(configFile, configLine);
 				}
+				while ((foundLocation = configLine.find("ForceNVProfileLoad")) != std::string::npos)
+				{
+					if (configLine.find("true") != std::string::npos)
+					{
+						m_forceNvProfileLoad = TRUE;
+					}
+					else if (configLine.find("false") != std::string::npos)
+					{
+						m_forceNvProfileLoad = FALSE;
+					}
+					getline(configFile, configLine);
+				}
 				while ((foundLocation = configLine.find("AutomaticHookPoint")) != std::string::npos)
 				{
 					if (configLine.find("true") != std::string::npos)

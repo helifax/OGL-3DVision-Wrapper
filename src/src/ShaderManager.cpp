@@ -590,7 +590,7 @@ std::string ShaderManager::getShaderSource(GLuint shaderId)
 			}
 		}
 
-		if (NV3DVisionIsNotInit() && m_allShadersApplied == false)
+		if (!NV3DVisionIsNotInit() && m_allShadersApplied == false)
 		{
 			for (size_t j = 0; j < m_existingShaders.size(); j++)
 			{
