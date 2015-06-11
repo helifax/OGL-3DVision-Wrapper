@@ -1,6 +1,32 @@
 # OGL-3DVision-Wrapper
 OpenGL Wrapper to enable 3D Vision Support under Windows
 
+
+
+-------------------------
+NEW IN VERSION 3.19 BETA
+-------------------------
+ 
+ 
+New Features:
+- Updated the wrapper to properly enumerate GL_EXTENSIONS on OpenGL contexts up to OpenGL 4.x.
+- Rewrote the way the shaders are loaded. They now rely on CRC32 to be correctly identified.
+- Shaders are now swapped at initialization in order to avoid other complications when swapped after creation.
+- Added ability to load the [Shader_Compiler_Options] section real-time by pressing [F11] key.
+- Added ability to specify specific separation & convergence value to different Shader Programs from the ini file.
+- Updated the ini file parser so is more robust.
+- Added ability to force the Wrapper to create a Fullscreen context if the information from the engine window says is in window mode when in fact is not.
+- [Development version] Added ability to disable both pixel & vertex shader when is being selected.
+- [Development version] Added ability to disable pixel & vertex shaders between and interval or not to stereorize them.
+
+Updates:
+- Rewrote the whole Shader Manager!
+- Added CRC32 calculation to properly identy shaders.
+- Massive rework on shader dump and loading/swapping mechanisms.
+- Fixed a bug where the wrapper wasn't injection stereoscopy in vertex shaders in all possible & valid locations.
+ 
+ 
+
 -------------------------
 NEW IN VERSION 2.00 BETA
 -------------------------
