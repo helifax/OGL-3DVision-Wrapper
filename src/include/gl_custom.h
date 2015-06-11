@@ -1,5 +1,5 @@
 /*
-* OpenGL - 3D Vision Wrapper V.1.5
+* OpenGL - 3D Vision Wrapper
 * Copyright (c) Helifax 2015
 */
 
@@ -609,6 +609,7 @@ extern int ogl_ext_EXT_texture_filter_anisotropic;
 #define GL_EXP 0x0800
 #define GL_EXP2 0x0801
 #define GL_EXTENSIONS 0x1F03
+#define GL_NUM_EXTENSIONS 0x821D
 #define GL_EYE_LINEAR 0x2400
 #define GL_EYE_PLANE 0x2502
 #define GL_FALSE 0

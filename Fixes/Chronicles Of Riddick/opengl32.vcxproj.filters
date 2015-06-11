@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{b0a3a7df-09f0-4771-8ad5-bae9439585ad}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{79aec131-fec8-4534-bfb3-5b13fc14ecb6}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Source Files\ShaderManager">
+      <UniqueIdentifier>{f936bc0e-2cf2-45eb-85d5-5c806c2af0c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ShaderManager\FPS_Fix">
+      <UniqueIdentifier>{12b43a76-6ac2-4845-8676-13ba8ef4f631}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CustomMessageBox">
+      <UniqueIdentifier>{03bc9728-281a-43db-9680-539ba845b40b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="opengl32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OtherOGL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\gl_custom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\opengl_3dv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\wgl_custom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>Source Files\ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="FPSInject.cpp">
+      <Filter>Source Files\ShaderManager\FPS_Fix</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageBox\MessageBox.cpp">
+      <Filter>Source Files\CustomMessageBox</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="opengl32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gl_custom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opengl_3dv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\wgl_custom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="database.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ShaderManager.h">
+      <Filter>Source Files\ShaderManager</Filter>
+    </ClInclude>
+    <ClInclude Include="FPSInject.h">
+      <Filter>Source Files\ShaderManager\FPS_Fix</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageBox\MessageBox.h">
+      <Filter>Source Files\CustomMessageBox</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="opengl32.def">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="MessageBox\Logo.bmp">
+      <Filter>Source Files\CustomMessageBox</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Source Files\CustomMessageBox</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

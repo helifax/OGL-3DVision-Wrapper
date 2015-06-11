@@ -1,0 +1,52 @@
+alloc(newmem,2048)
+label(returnhere)
+label(originalcode)
+label(exit)
+label(frame1)
+label(frame2)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+push eax
+mov eax, [0018A444]
+cmp eax, 0x02
+jne frame2
+je frame1
+
+
+frame2:
+add [0018A444], 0x01
+pop eax
+jmp "Amnesia.exe"+EAB4B
+push 0A
+call "Amnesia.exe"+EC3A0
+
+frame1:
+mov [0018A444], 0x01
+pop eax
+push 0A
+
+exit:
+jmp returnhere
+
+"Amnesia.exe"+EAB19:
+jmp newmem
+nop
+nop
+nop
+nop
+returnhere:
+
+
+
+74 30 6A 0A E8 7E 18 00 00 8B 4E 60 8B 01 83 C4 04   
+
+
+"Amnesia.exe"+EAB4B // normal jump
+
+"Amnesia.exe"+EC3A0 // Sleep jump
+
+
+"Amnesia.exe"+131C60 // LATEST VERSION

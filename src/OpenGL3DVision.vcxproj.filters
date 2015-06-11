@@ -20,6 +20,15 @@
     <Filter Include="Source Files\MessageBox">
       <UniqueIdentifier>{03bc9728-281a-43db-9680-539ba845b40b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\WindowManager">
+      <UniqueIdentifier>{a679bbeb-1fa2-4073-b747-a7e70a0d3b61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\NvApi Profiler">
+      <UniqueIdentifier>{31bd327e-2096-4677-8fae-06a6079269d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ShaderManager\CRC32">
+      <UniqueIdentifier>{1fd8c2d9-d8b7-4ac3-969c-aeec1a928160}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ConfigReader.h">
@@ -51,6 +60,18 @@
     </ClInclude>
     <ClInclude Include="src\opengl32_ARB_Variant.h">
       <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wrapper_version.h">
+      <Filter>Source Files\3DVision</Filter>
+    </ClInclude>
+    <ClInclude Include="include\WindowManager.h">
+      <Filter>Source Files\WindowManager</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NvApiProfileSettings.h">
+      <Filter>Source Files\NvApi Profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crc32.h">
+      <Filter>Source Files\ShaderManager\CRC32</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -84,8 +105,14 @@
     <ClCompile Include="src\opengl32_ARB_Variant.cpp">
       <Filter>Source Files\3DVision</Filter>
     </ClCompile>
+    <ClCompile Include="src\WindowManager.cpp">
+      <Filter>Source Files\WindowManager</Filter>
+    </ClCompile>
     <ClCompile Include="src\NvApiProfileSettings.cpp">
-      <Filter>Source Files\3DVision</Filter>
+      <Filter>Source Files\NvApi Profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crc32.cpp">
+      <Filter>Source Files\ShaderManager\CRC32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

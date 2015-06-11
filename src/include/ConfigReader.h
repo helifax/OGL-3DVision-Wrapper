@@ -1,5 +1,5 @@
 /*
-* OpenGL - 3D Vision Wrapper V.1.5
+* OpenGL - 3D Vision Wrapper
 * Copyright (c) Helifax 2015
 */
 
@@ -21,6 +21,9 @@ public:
 	//ctor
 	configReader();
 	~configReader();
+	// ---------------------------------------------------------------------------------------------
+
+	void ReadConfigFile();
 	// ---------------------------------------------------------------------------------------------
 
 	 bool GetEnableLog()
@@ -46,6 +49,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	 void SetInjectionPoint(std::string value)
+	 {
+		 m_injectionPoint = value;
+	 }
+	 // ---------------------------------------------------------------------------------------------
+
 	 bool GetVertexStereoInjection()
 	{
 		return m_enableVertexStereoInjection;
@@ -55,6 +64,12 @@ public:
 	 bool isLegacyOpenGLEnabled()
 	 {
 		 return m_legacyOpenGL;
+	 }
+	 // ---------------------------------------------------------------------------------------------
+
+	 float GetLegacyHUDSeparation()
+	 {
+		 return m_legacyHUDSeparation;
 	 }
 	 // ---------------------------------------------------------------------------------------------
 
@@ -82,12 +97,6 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
-	bool GetPrintDebugInfoState()
-	{
-		return m_ScreenBufferCallTracer;
-	}
-	// ---------------------------------------------------------------------------------------------
-
 	inline bool Get3DVisionEnabledStatus()
 	{
 		return m_3dVisionEnabled;
@@ -100,27 +109,21 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
-	bool GetWindowModeEnabled()
+	inline bool IsFullScreenForced()
+	{
+		return m_forceFullScreen;
+	}
+	// ---------------------------------------------------------------------------------------------
+
+	inline bool IsWindowModeSupportEnabled()
 	{
 		return m_windowModeEnabled;
 	}
 	// ---------------------------------------------------------------------------------------------
 
-	void SetWindowModeEnabled(bool setMode)
+	inline bool IsFullScreenDetectionEnabled()
 	{
-		m_windowModeEnabled = setMode;
-	}
-	// ---------------------------------------------------------------------------------------------
-
-	bool GetWindowResizeEnabled()
-	{
-		return m_windowResizeEnabled;
-	}
-	// ---------------------------------------------------------------------------------------------
-
-	bool IsAutomaticHookMode()
-	{
-		return m_automaticInjectionPoint;
+		return m_fullscreenDetection;
 	}
 	// ---------------------------------------------------------------------------------------------
 
@@ -136,6 +139,12 @@ public:
 	}
 	// ---------------------------------------------------------------------------------------------
 
+	float Get3DVisionRating()
+	{
+		return m_3DVisionRating;
+	}
+	// ---------------------------------------------------------------------------------------------
+
 private:
 	//Log
 	bool m_enableSplashScreen;
@@ -143,16 +152,16 @@ private:
 	bool m_enableShaderDump;
 	
 	// Insertion Point	
-	bool m_ScreenBufferCallTracer;
 	bool m_3dVisionEnabled;
+	bool m_forceFullScreen;
 	bool m_windowModeEnabled;
-	bool m_windowResizeEnabled;
+	bool m_fullscreenDetection;
 	std::string m_injectionPoint;
-	bool m_automaticInjectionPoint;
 	bool m_enableVertexStereoInjection;
 
 	// OpenGL Legacy Code Flag
 	bool m_legacyOpenGL;
+	float m_legacyHUDSeparation;
 
 	//3D Settings specific
 	bool m_enableToggleMode;
@@ -161,6 +170,7 @@ private:
 	float m_depthFactor;
 	unsigned int m_defaultConvergence;
 	bool m_forceNvProfileLoad;
+	float m_3DVisionRating;
 
 };
 

@@ -1,0 +1,40 @@
+alloc(newmem,2048)
+label(returnhere)
+label(originalcode)
+label(exit)
+label(frame1)
+label(frame2)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+
+push eax
+mov eax, [aamfp.exe+75DAC8]
+cmp eax, 0x02
+jne frame1
+je frame2
+
+
+
+frame1:
+add [aamfp.exe+75DAC8], 0x01
+jmp aamfp.exe+14827F
+pop eax
+push 0A
+nop
+
+frame2:
+mov [aamfp.exe+75DAC8], 0x01
+jmp aamfp.exe+1482B2
+pop eax
+push 0A
+nop
+
+exit:
+jmp returnhere
+
+"aamfp.exe"+148276:
+jmp newmem
+returnhere:

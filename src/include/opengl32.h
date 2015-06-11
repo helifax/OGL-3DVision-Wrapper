@@ -1,5 +1,5 @@
 /*
-* OpenGL - 3D Vision Wrapper V.1.5
+* OpenGL - 3D Vision Wrapper
 * Copyright (c) Helifax 2015
 */
 
@@ -112,8 +112,8 @@
 #include <math.h>
 
 extern BOOL Init (void);
-extern void __cdecl add_log (const char * fmt, ...);
 extern HMODULE hOriginalDll;
+void __cdecl add_log(const char * fmt, ...);
 
 typedef void( *func_glUniformMatrix4fv_t)(GLint location, GLsizei count, GLboolean transpose, GLfloat *value);
 
@@ -126,6 +126,7 @@ typedef void(*funct_glGetShaderSource_t)(GLuint shader,GLsizei bufSize,GLsizei *
 typedef void(*funct_glGetShaderiv_t)(GLuint shader, GLenum pname, GLint *params);
 typedef GLint(*func_glGetUniformLocation_t)(GLuint program, const GLchar *name);
 typedef void (*func_glUniform1f_t)(GLint location, GLfloat v0);
+typedef void(*func_glUniform4f_t)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 typedef void(*func_glBindFramebuffer_t)(GLenum target, GLuint framebuffer);
 typedef void(*func_glLinkProgram_t)(GLuint program);
 typedef void(*func_glCompileShader)(GLuint shader);
@@ -143,6 +144,7 @@ typedef void(*func_glGetShaderInfoLog_t)(GLuint shader, GLsizei maxLength, GLsiz
 typedef void(*func_glGetProgramInfoLog_t)(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 typedef void(*func_glAttachShader_t)(GLuint program, GLuint shader);
 typedef GLuint(*func_glCreateShader)(GLenum shaderType);
+
 // Other Stuff
 typedef GLenum(*func_glGetError_t)(void);
 typedef void ( *func_glActiveTextureARB_t) (GLenum target);
@@ -524,6 +526,7 @@ extern func_glCompileShaderARB orig_glCompileShaderARB;
 extern funct_glGetShaderiv_t orig_glGetShader;
 extern func_glGetUniformLocation_t orig_glGetUniformLocation;
 extern func_glUniform1f_t orig_glUniform1f;
+extern func_glUniform4f_t orig_glUniform4f;
 extern func_glBindFramebuffer_t orig_glBindFramebuffer;
 extern func_glLinkProgram_t orig_glLinkProgram;
 extern func_glGetProgramiv_t orig_glGetProgramiv;
@@ -536,6 +539,7 @@ extern func_glGetShaderInfoLog_t orig_glGetShaderInfoLog;
 extern func_glGetProgramInfoLog_t orig_glGetProgramInfoLog;
 extern func_glAttachShader_t orig_glAttachShader;
 extern func_glCreateShader orig_glCreateShader;
+extern func_glListBase_t orig_glListBase;
 // Shader info + other
 extern func_glGetError_t orig_glGetError;
 extern func_glUniformMatrix4fv_t orig_glUniformMatrix4fv;
@@ -904,4 +908,8 @@ extern func_wglUseFontBitmapsA_t	orig_wglUseFontBitmapsA;
 extern func_wglUseFontBitmapsW_t	orig_wglUseFontBitmapsW;
 extern func_wglUseFontOutlinesA_t	orig_wglUseFontOutlinesA;
 extern func_wglUseFontOutlinesW_t	orig_wglUseFontOutlinesW;
+
+// Function to get the main thread handle
+DWORD GetMainThreadId(void);
+
 #endif

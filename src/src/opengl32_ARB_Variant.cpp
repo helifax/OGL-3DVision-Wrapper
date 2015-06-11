@@ -1,8 +1,6 @@
 
 #include "opengl32_ARB_Variant.h"
 
-// Currently ShaderSource ARB Variant returns junk characters at the end of the string.....
-
 // Add the stereo values
 // OpenGL 2.0
 void sys_glUseProgramObjectARB(GLhandleARB program)
@@ -11,9 +9,6 @@ void sys_glUseProgramObjectARB(GLhandleARB program)
 
 	// Get the shaderManager
 	ShaderManager * shaderManager = ShaderManager::getInstance();
-
-	//Apply the shaders
-	shaderManager->ApplyExceptionShaders();
 
 #ifdef DEBUG_WRAPPER
 	shaderManager->ApplyDebugExceptionShaders();
@@ -66,12 +61,17 @@ void sys_glUseProgramObjectARB(GLhandleARB program)
 	}
 
 	/////////////////////////////////////
+	// APPLY CUSTOM SHADER PARAMS
+	/////////////////////////////////////
+	shaderManager->ApplyCustomShaderParams(program);
+
+	/////////////////////////////////////
 	// USED TO DISABLE ALOT OF SHADERS
 	/////////////////////////////////////
 #ifdef	DEBUG_WRAPPER
 	if (shaderManager->VertexShadersExceptionsEnabled())
 	{
-		if (((GLint)program >= (GLint)shaderManager->GetExceptionShaderVertexStart() && (GLint)program <= (GLint)shaderManager->GetExceptionShaderVertexEnd()))
+		if (((GLint)program >= (GLint)shaderManager->GetExceptionShaderStart() && (GLint)program <= (GLint)shaderManager->GetExceptionShaderEnd()))
 		{
 			GLint location_eye_separation = (*orig_glGetUniformLocation)(program, uniform_eye_spearation);
 			GLint location_convergence = (*orig_glGetUniformLocation)(program, uniform_convergence);

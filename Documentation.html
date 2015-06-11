@@ -23,6 +23,47 @@ left:768px;
 <p>Welcome to the official documentation for "OpenGL3DVision" wrapper.</br>
  For the latest news please visit: <a href="http://3dsurroundgaming.com/" target="_blank">3DSurroundGaming.com</a></p>
 
+ <h1>New in Version 3.19 Beta<br></h1>
+ <ul>
+ <li>New Features:</br>
+- Updated the wrapper to properly enumerate GL_EXTENSIONS on OpenGL contexts up to OpenGL 4.x.</br>
+- Rewrote the way the shaders are loaded. They now rely on CRC32 to be correctly identified.</br>
+- Shaders are now swapped at initialization in order to avoid other complications when swapped after creation.</br>
+- Added ability to load the [Shader_Compiler_Options] section real-time by pressing [F11] key.</br>
+- Added ability to specify specific separation & convergence value to different Shader Programs from the ini file.</br>
+- Updated the ini file parser so is more robust.</br>
+- Added ability to force the Wrapper to create a Fullscreen context if the information from the engine window says is in window mode when in fact is not.</br>
+- [Development version] Added ability to disable both pixel & vertex shader when is being selected.</br>
+- [Development version] Added ability to disable pixel & vertex shaders between and interval or not to stereorize them.</li>
+</br>
+<li>Updates:</br>
+- Rewrote the whole Shader Manager!</br>
+- Added CRC32 calculation to properly identy shaders.</br>
+- Massive rework on shader dump and loading/swapping mechanisms.</br>
+- Fixed a bug where the wrapper wasn't injection stereoscopy in vertex shaders in all possible & valid locations.</br></li>
+ </br>
+ 
+ <h1>New in Version 2.00 Beta<br></h1>
+ <ul>
+ <li>New Features:</br>
+- Added ability to enable/disable Legacy OpenGL calls for modifying the projection matrix and adding stereoscopy.(More functions require detouring.)</br>
+- Added ability to work on Aurora Engine games (Star Wars: Kotor 1 & 2).</br>
+- Added ability to get the Nvidia Profile associated with the game (via NVAPI) and enable 3D Vision compatibility:</br>
+a. If a profile does not exist, the wrapper will generate a profile. (Name of Profile :"app.exe-3D Vision Wrapper".) </br>
+b. If a profile exists, the wrapper will add the 3D Vision flags.</br>
+c. If the Nvidia driver is reinstalled, the wrapper will automatically detect this and apply the correct profile again.</br>
+- Added Default Convergence Setting in the ini file. It is set when the profile is created initially.</br>
+- Added Ability to read and apply a Game Profile (from a Profile.nip file). It is set when the profile is updated initially. (The Application will require a restart in order for the settings to take effect.)</li>
+</br>
+<li>Updates:</br>
+- Updated to NVAPI 343.</br>
+- Added Thread Safety in the NVAPI threads.</br>
+- Updated Windows Version Query Mechanism from a legacy one as there were problems with correct initialization of the 3D Vision driver.</br>
+- Updated the Wrapper so it doesn't crash if/when 3D Vision is not present/disabled in NVPanel.</br>
+- Fixed other various crashes that appeared on improper initialization.</br>
+- Updated the Log Generation with additional information.</li>
+ </ul>
+ 
  <h1>New in Version 1.50<br></h1>
  <ul>
  <li>New Features:</br>

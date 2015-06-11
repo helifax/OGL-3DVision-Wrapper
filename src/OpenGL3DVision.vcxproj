@@ -30,13 +30,17 @@
     <ClInclude Include="FPSInject\FPSInject.h" />
     <ClInclude Include="include\ConfigReader.h" />
     <ClInclude Include="include\gl_custom.h" />
+    <ClInclude Include="include\NvApiProfileSettings.h" />
     <ClInclude Include="include\opengl32.h" />
     <ClInclude Include="include\opengl_3dv.h" />
     <ClInclude Include="include\ShaderManager.h" />
     <ClInclude Include="include\wgl_custom.h" />
+    <ClInclude Include="include\WindowManager.h" />
     <ClInclude Include="MessageBox\MessageBox.h" />
     <ClInclude Include="MessageBox\resource.h" />
+    <ClInclude Include="src\crc32.h" />
     <ClInclude Include="src\opengl32_ARB_Variant.h" />
+    <ClInclude Include="src\wrapper_version.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="include\opengl32.def" />
@@ -44,6 +48,7 @@
   <ItemGroup>
     <ClCompile Include="MessageBox\MessageBox.cpp" />
     <ClCompile Include="src\ConfigReader.cpp" />
+    <ClCompile Include="src\crc32.cpp" />
     <ClCompile Include="src\gl_custom.cpp" />
     <ClCompile Include="src\NvApiProfileSettings.cpp" />
     <ClCompile Include="src\opengl32.cpp" />
@@ -53,6 +58,7 @@
     <ClCompile Include="src\ShaderManager.cpp" />
     <ClCompile Include="src\ShaderManagerCompiler.cpp" />
     <ClCompile Include="src\wgl_custom.cpp" />
+    <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="MessageBox\Logo.bmp" />
@@ -412,10 +418,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <Optimization>Full</Optimization>
+      <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>WIN64;_WIN64;DEBUG_WRAPPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>

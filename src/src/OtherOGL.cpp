@@ -10,6 +10,9 @@ extern "C" {
 #include "opengl32.h"
 #include "include\gl_custom.h"
 #include "ConfigReader.h"
+#include "wrapper_version.h"
+#include "NvApiProfileSettings.h"
+#include "WindowManager.h"
 
 configReader *g_reader;
 
@@ -23,6 +26,7 @@ configReader *g_reader;
  funct_glGetShaderiv_t orig_glGetShader;
  func_glGetUniformLocation_t orig_glGetUniformLocation;
  func_glUniform1f_t orig_glUniform1f;
+ func_glUniform4f_t orig_glUniform4f;
  func_glBindFramebuffer_t orig_glBindFramebuffer;
  func_glLinkProgram_t orig_glLinkProgram;
  func_glGetProgramiv_t orig_glGetProgramiv;
@@ -1104,13 +1108,11 @@ void sys_glLoadIdentity (void)
 
 void sys_glLoadMatrixd (const GLdouble *m)
 {
-	// TO DO: Enable Legacy Mode here as well
 	(*orig_glLoadMatrixd) (m);
 }
 
 void sys_glLoadMatrixf (const GLfloat *m)
 {
-	// TO DO: Enable Legacy Mode here as well
 	(*orig_glLoadMatrixf) (m);
 }
 
@@ -1205,21 +1207,46 @@ void sys_glMatrixMode (GLenum mode)
 				// Get the current Projection matrix
 				glGetFloatv(GL_PROJECTION_MATRIX, mCurrentProj);
 
-				// Left Eye
-				if (NV3DVisionGetCurrentFrame() == 1)
+				// Apply ONLY FOR Perspective projection!
+				if ((mCurrentProj[3] == 0) && (mCurrentProj[7] == 0) && (mCurrentProj[11] == -1) && (mCurrentProj[15] == 0))
 				{
-					// Apply the stereo correction for Current Eye
-					mCurrentProj[8] += currentSeparation;
-					mCurrentProj[12] += currentSeparation * currentConvergence;
+					// Left Eye
+					if (NV3DVisionGetCurrentFrame() == 1)
+					{
+						// Apply the stereo correction for Current Eye
+						mCurrentProj[8] += currentSeparation;
+						mCurrentProj[12] += currentSeparation * currentConvergence;
+					}
+					// Right Eye
+					else if (NV3DVisionGetCurrentFrame() == 2)
+					{
+						// Apply the stereo correction for Current Eye
+						mCurrentProj[8] -= currentSeparation;
+						mCurrentProj[12] -= currentSeparation * currentConvergence;
+					}
 				}
-				// Right Eye
-				else if (NV3DVisionGetCurrentFrame() == 2)
+				else // This is Orthographic perspective
 				{
-					// Apply the stereo correction for Current Eye
-					mCurrentProj[8] -= currentSeparation;
-					mCurrentProj[12] -= currentSeparation * currentConvergence;
-				}
+					float currentHUDSeparation = g_reader->GetLegacyHUDSeparation();
+					if (currentHUDSeparation != 0)
+					{
+						// Update the separation to a correct value
+						currentHUDSeparation /= 10.0f;
 
+						// Left Eye
+						if (NV3DVisionGetCurrentFrame() == 1)
+						{
+							// Apply the stereo correction for Current Eye
+							mCurrentProj[12] -= currentSeparation;
+						}
+						// Right Eye
+						else if (NV3DVisionGetCurrentFrame() == 2)
+						{
+							// Apply the stereo correction for Current Eye
+							mCurrentProj[12] += currentSeparation;
+						}
+					}
+				}
 				// Load it back
 				glLoadMatrixf(mCurrentProj);
 			}
@@ -2082,16 +2109,6 @@ __declspec(naked) void sys_wglShareLists(void)
 	}
 }
 
-/*
-// ASM Variant
-__declspec(naked) void sys_wglSwapLayerBuffers(void)
-{
-	__asm
-	{
-		jmp [orig_wglSwapLayerBuffers]
-	}
-}
-*/
 
 __declspec(naked) void sys_wglUseFontBitmapsA(void)
 {
@@ -2130,6 +2147,16 @@ BOOL Init (void)
 	// Remove logfile.
 	remove("3DVisionWrapper.log");
 
+	// Wrapper Information
+	add_log("");
+	add_log("============");
+	add_log("Welcome to OpenGL-3D Vision wrapper v.%s.", OGL3DVISION_VERSION_STR);
+	add_log("============");
+
+	// Get our Pid
+	add_log("");
+	add_log("Found %s with PID: %x", WindowGetExeName(), GetPidFromExeName());
+
 	if ( !hOriginalDll )
 	{
 		char sysdir[MAX_PATH];
@@ -2149,2169 +2176,2176 @@ BOOL Init (void)
 	
 	if ( (orig_glAccum = (func_glAccum_t) GetProcAddress (hOriginalDll, "glAccum")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glAccum()");
+		add_log ("Couldn't find a prototype for glAccum()");
 		return FALSE;
 	}
 
 	if ( (orig_glAlphaFunc = (func_glAlphaFunc_t) GetProcAddress (hOriginalDll, "glAlphaFunc")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glAlphaFunc()");
+		add_log ("Couldn't find a prototype for glAlphaFunc()");
 		return FALSE;
 	}
 
 	if ( (orig_glAreTexturesResident = (func_glAreTexturesResident_t) GetProcAddress (hOriginalDll, "glAreTexturesResident")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glAreTexturesResident()");
+		add_log ("Couldn't find a prototype for glAreTexturesResident()");
 		return FALSE;
 	}
 
 	if ( (orig_glArrayElement = (func_glArrayElement_t) GetProcAddress (hOriginalDll, "glArrayElement")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glArrayElement()");
+		add_log ("Couldn't find a prototype for glArrayElement()");
 		return FALSE;
 	}
 
 	if ( (orig_glBegin = (func_glBegin_t) GetProcAddress (hOriginalDll, "glBegin")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glBegin()");
+		add_log ("Couldn't find a prototype for glBegin()");
 		return FALSE;
 	}
 
 	if ( (orig_glBindTexture = (func_glBindTexture_t) GetProcAddress (hOriginalDll, "glBindTexture")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glBindTexture()");
+		add_log ("Couldn't find a prototype for glBindTexture()");
 		return FALSE;
 	}
 
 	if ( (orig_glBitmap = (func_glBitmap_t) GetProcAddress (hOriginalDll, "glBitmap")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glBitmap()");
+		add_log ("Couldn't find a prototype for glBitmap()");
 		return FALSE;
 	}
 
 	if ( (orig_glBlendFunc = (func_glBlendFunc_t) GetProcAddress (hOriginalDll, "glBlendFunc")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glBlendFunc()");
+		add_log ("Couldn't find a prototype for glBlendFunc()");
 		return FALSE;
 	}
 
 	if ( (orig_glCallList = (func_glCallList_t) GetProcAddress (hOriginalDll, "glCallList")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCallList()");
+		add_log ("Couldn't find a prototype for glCallList()");
 		return FALSE;
 	}
 
 	if ( (orig_glCallLists = (func_glCallLists_t) GetProcAddress (hOriginalDll, "glCallLists")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCallLists()");
+		add_log ("Couldn't find a prototype for glCallLists()");
 		return FALSE;
 	}
 
 	if ( (orig_glClear = (func_glClear_t) GetProcAddress (hOriginalDll, "glClear")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClear()");
+		add_log ("Couldn't find a prototype for glClear()");
 		return FALSE;
 	}
 
 	if ( (orig_glClearAccum = (func_glClearAccum_t) GetProcAddress (hOriginalDll, "glClearAccum")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClearAccum()");
+		add_log ("Couldn't find a prototype for glClearAccum()");
 		return FALSE;
 	}
 
 	if ( (orig_glClearColor = (func_glClearColor_t) GetProcAddress (hOriginalDll, "glClearColor")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClearColor()");
+		add_log ("Couldn't find a prototype for glClearColor()");
 		return FALSE;
 	}
 
 	if ( (orig_glClearDepth = (func_glClearDepth_t) GetProcAddress (hOriginalDll, "glClearDepth")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClearDepth()");
+		add_log ("Couldn't find a prototype for glClearDepth()");
 		return FALSE;
 	}
 
 	if ( (orig_glClearIndex = (func_glClearIndex_t) GetProcAddress (hOriginalDll, "glClearIndex")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClearIndex()");
+		add_log ("Couldn't find a prototype for glClearIndex()");
 		return FALSE;
 	}
 
 	if ( (orig_glClearStencil = (func_glClearStencil_t) GetProcAddress (hOriginalDll, "glClearStencil")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClearStencil()");
+		add_log ("Couldn't find a prototype for glClearStencil()");
 		return FALSE;
 	}
 
 	if ( (orig_glClipPlane = (func_glClipPlane_t) GetProcAddress (hOriginalDll, "glClipPlane")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glClipPlane()");
+		add_log ("Couldn't find a prototype for glClipPlane()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3b = (func_glColor3b_t) GetProcAddress (hOriginalDll, "glColor3b")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3b()");
+		add_log ("Couldn't find a prototype for glColor3b()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3bv = (func_glColor3bv_t) GetProcAddress (hOriginalDll, "glColor3bv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3bv()");
+		add_log ("Couldn't find a prototype for glColor3bv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3d = (func_glColor3d_t) GetProcAddress (hOriginalDll, "glColor3d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3d()");
+		add_log ("Couldn't find a prototype for glColor3d()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3dv = (func_glColor3dv_t) GetProcAddress (hOriginalDll, "glColor3dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3dv()");
+		add_log ("Couldn't find a prototype for glColor3dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3f = (func_glColor3f_t) GetProcAddress (hOriginalDll, "glColor3f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3f()");
+		add_log ("Couldn't find a prototype for glColor3f()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3fv = (func_glColor3fv_t) GetProcAddress (hOriginalDll, "glColor3fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3fv()");
+		add_log ("Couldn't find a prototype for glColor3fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3i = (func_glColor3i_t) GetProcAddress (hOriginalDll, "glColor3i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3i()");
+		add_log ("Couldn't find a prototype for glColor3i()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3iv = (func_glColor3iv_t) GetProcAddress (hOriginalDll, "glColor3iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3iv()");
+		add_log ("Couldn't find a prototype for glColor3iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3s = (func_glColor3s_t) GetProcAddress (hOriginalDll, "glColor3s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3s()");
+		add_log ("Couldn't find a prototype for glColor3s()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3sv = (func_glColor3sv_t) GetProcAddress (hOriginalDll, "glColor3sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3sv()");
+		add_log ("Couldn't find a prototype for glColor3sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3ub = (func_glColor3ub_t) GetProcAddress (hOriginalDll, "glColor3ub")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3ub()");
+		add_log ("Couldn't find a prototype for glColor3ub()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3ubv = (func_glColor3ubv_t) GetProcAddress (hOriginalDll, "glColor3ubv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3ubv()");
+		add_log ("Couldn't find a prototype for glColor3ubv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3ui = (func_glColor3ui_t) GetProcAddress (hOriginalDll, "glColor3ui")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3ui()");
+		add_log ("Couldn't find a prototype for glColor3ui()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3uiv = (func_glColor3uiv_t) GetProcAddress (hOriginalDll, "glColor3uiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3uiv()");
+		add_log ("Couldn't find a prototype for glColor3uiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3us = (func_glColor3us_t) GetProcAddress (hOriginalDll, "glColor3us")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3us()");
+		add_log ("Couldn't find a prototype for glColor3us()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor3usv = (func_glColor3usv_t) GetProcAddress (hOriginalDll, "glColor3usv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor3usv()");
+		add_log ("Couldn't find a prototype for glColor3usv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4b = (func_glColor4b_t) GetProcAddress (hOriginalDll, "glColor4b")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4b()");
+		add_log ("Couldn't find a prototype for glColor4b()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4bv = (func_glColor4bv_t) GetProcAddress (hOriginalDll, "glColor4bv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4bv()");
+		add_log ("Couldn't find a prototype for glColor4bv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4d = (func_glColor4d_t) GetProcAddress (hOriginalDll, "glColor4d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4d()");
+		add_log ("Couldn't find a prototype for glColor4d()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4dv = (func_glColor4dv_t) GetProcAddress (hOriginalDll, "glColor4dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4dv()");
+		add_log ("Couldn't find a prototype for glColor4dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4f = (func_glColor4f_t) GetProcAddress (hOriginalDll, "glColor4f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4f()");
+		add_log ("Couldn't find a prototype for glColor4f()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4fv = (func_glColor4fv_t) GetProcAddress (hOriginalDll, "glColor4fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4fv()");
+		add_log ("Couldn't find a prototype for glColor4fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4i = (func_glColor4i_t) GetProcAddress (hOriginalDll, "glColor4i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4i()");
+		add_log ("Couldn't find a prototype for glColor4i()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4iv = (func_glColor4iv_t) GetProcAddress (hOriginalDll, "glColor4iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4iv()");
+		add_log ("Couldn't find a prototype for glColor4iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4s = (func_glColor4s_t) GetProcAddress (hOriginalDll, "glColor4s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4s()");
+		add_log ("Couldn't find a prototype for glColor4s()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4sv = (func_glColor4sv_t) GetProcAddress (hOriginalDll, "glColor4sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4sv()");
+		add_log ("Couldn't find a prototype for glColor4sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4ub = (func_glColor4ub_t) GetProcAddress (hOriginalDll, "glColor4ub")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4ub()");
+		add_log ("Couldn't find a prototype for glColor4ub()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4ubv = (func_glColor4ubv_t) GetProcAddress (hOriginalDll, "glColor4ubv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4ubv()");
+		add_log ("Couldn't find a prototype for glColor4ubv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4ui = (func_glColor4ui_t) GetProcAddress (hOriginalDll, "glColor4ui")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4ui()");
+		add_log ("Couldn't find a prototype for glColor4ui()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4uiv = (func_glColor4uiv_t) GetProcAddress (hOriginalDll, "glColor4uiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4uiv()");
+		add_log ("Couldn't find a prototype for glColor4uiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4us = (func_glColor4us_t) GetProcAddress (hOriginalDll, "glColor4us")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4us()");
+		add_log ("Couldn't find a prototype for glColor4us()");
 		return FALSE;
 	}
 
 	if ( (orig_glColor4usv = (func_glColor4usv_t) GetProcAddress (hOriginalDll, "glColor4usv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColor4usv()");
+		add_log ("Couldn't find a prototype for glColor4usv()");
 		return FALSE;
 	}
 
 	if ( (orig_glColorMask = (func_glColorMask_t) GetProcAddress (hOriginalDll, "glColorMask")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColorMask()");
+		add_log ("Couldn't find a prototype for glColorMask()");
 		return FALSE;
 	}
 
 	if ( (orig_glColorMaterial = (func_glColorMaterial_t) GetProcAddress (hOriginalDll, "glColorMaterial")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColorMaterial()");
+		add_log ("Couldn't find a prototype for glColorMaterial()");
 		return FALSE;
 	}
 
 	if ( (orig_glColorPointer = (func_glColorPointer_t) GetProcAddress (hOriginalDll, "glColorPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glColorPointer()");
+		add_log ("Couldn't find a prototype for glColorPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glCopyPixels = (func_glCopyPixels_t) GetProcAddress (hOriginalDll, "glCopyPixels")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCopyPixels()");
+		add_log ("Couldn't find a prototype for glCopyPixels()");
 		return FALSE;
 	}
 
 	if ( (orig_glCopyTexImage1D = (func_glCopyTexImage1D_t) GetProcAddress (hOriginalDll, "glCopyTexImage1D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCopyTexImage1D()");
+		add_log ("Couldn't find a prototype for glCopyTexImage1D()");
 		return FALSE;
 	}
 
 	if ( (orig_glCopyTexImage2D = (func_glCopyTexImage2D_t) GetProcAddress (hOriginalDll, "glCopyTexImage2D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCopyTexImage2D()");
+		add_log ("Couldn't find a prototype for glCopyTexImage2D()");
 		return FALSE;
 	}
 
 	if ( (orig_glCopyTexSubImage1D = (func_glCopyTexSubImage1D_t) GetProcAddress (hOriginalDll, "glCopyTexSubImage1D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCopyTexSubImage1D()");
+		add_log ("Couldn't find a prototype for glCopyTexSubImage1D()");
 		return FALSE;
 	}
 
 	if ( (orig_glCopyTexSubImage2D = (func_glCopyTexSubImage2D_t) GetProcAddress (hOriginalDll, "glCopyTexSubImage2D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCopyTexSubImage2D()");
+		add_log ("Couldn't find a prototype for glCopyTexSubImage2D()");
 		return FALSE;
 	}
 
 	if ( (orig_glCullFace = (func_glCullFace_t) GetProcAddress (hOriginalDll, "glCullFace")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glCullFace()");
+		add_log ("Couldn't find a prototype for glCullFace()");
 		return FALSE;
 	}
 
 	if ( (orig_glDebugEntry = (func_glDebugEntry_t) GetProcAddress (hOriginalDll, "glDebugEntry")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDebugEntry()");
+		add_log ("Couldn't find a prototype for glDebugEntry()");
 		return FALSE;
 	}
 
 	if ( (orig_glDeleteLists = (func_glDeleteLists_t) GetProcAddress (hOriginalDll, "glDeleteLists")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDeleteLists()");
+		add_log ("Couldn't find a prototype for glDeleteLists()");
 		return FALSE;
 	}
 
 	if ( (orig_glDeleteTextures = (func_glDeleteTextures_t) GetProcAddress (hOriginalDll, "glDeleteTextures")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDeleteTextures()");
+		add_log ("Couldn't find a prototype for glDeleteTextures()");
 		return FALSE;
 	}
 
 	if ( (orig_glDepthFunc = (func_glDepthFunc_t) GetProcAddress (hOriginalDll, "glDepthFunc")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDepthFunc()");
+		add_log ("Couldn't find a prototype for glDepthFunc()");
 		return FALSE;
 	}
 
 	if ( (orig_glDepthMask = (func_glDepthMask_t) GetProcAddress (hOriginalDll, "glDepthMask")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDepthMask()");
+		add_log ("Couldn't find a prototype for glDepthMask()");
 		return FALSE;
 	}
 
 	if ( (orig_glDepthRange = (func_glDepthRange_t) GetProcAddress (hOriginalDll, "glDepthRange")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDepthRange()");
+		add_log ("Couldn't find a prototype for glDepthRange()");
 		return FALSE;
 	}
 
 	if ( (orig_glDisable = (func_glDisable_t) GetProcAddress (hOriginalDll, "glDisable")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDisable()");
+		add_log ("Couldn't find a prototype for glDisable()");
 		return FALSE;
 	}
 
 	if ( (orig_glDisableClientState = (func_glDisableClientState_t) GetProcAddress (hOriginalDll, "glDisableClientState")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDisableClientState()");
+		add_log ("Couldn't find a prototype for glDisableClientState()");
 		return FALSE;
 	}
 
 	if ( (orig_glDrawArrays = (func_glDrawArrays_t) GetProcAddress (hOriginalDll, "glDrawArrays")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDrawArrays()");
+		add_log ("Couldn't find a prototype for glDrawArrays()");
 		return FALSE;
 	}
 
 	if ( (orig_glDrawBuffer = (func_glDrawBuffer_t) GetProcAddress (hOriginalDll, "glDrawBuffer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDrawBuffer()");
+		add_log ("Couldn't find a prototype for glDrawBuffer()");
 		return FALSE;
 	}
 
 	if ( (orig_glDrawElements = (func_glDrawElements_t) GetProcAddress (hOriginalDll, "glDrawElements")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDrawElements()");
+		add_log ("Couldn't find a prototype for glDrawElements()");
 		return FALSE;
 	}
 
 	if ( (orig_glDrawPixels = (func_glDrawPixels_t) GetProcAddress (hOriginalDll, "glDrawPixels")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glDrawPixels()");
+		add_log ("Couldn't find a prototype for glDrawPixels()");
 		return FALSE;
 	}
 
 	if ( (orig_glEdgeFlag = (func_glEdgeFlag_t) GetProcAddress (hOriginalDll, "glEdgeFlag")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEdgeFlag()");
+		add_log ("Couldn't find a prototype for glEdgeFlag()");
 		return FALSE;
 	}
 
 	if ( (orig_glEdgeFlagPointer = (func_glEdgeFlagPointer_t) GetProcAddress (hOriginalDll, "glEdgeFlagPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEdgeFlagPointer()");
+		add_log ("Couldn't find a prototype for glEdgeFlagPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glEdgeFlagv = (func_glEdgeFlagv_t) GetProcAddress (hOriginalDll, "glEdgeFlagv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEdgeFlagv()");
+		add_log ("Couldn't find a prototype for glEdgeFlagv()");
 		return FALSE;
 	}
 
 	if ( (orig_glEnable = (func_glEnable_t) GetProcAddress (hOriginalDll, "glEnable")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEnable()");
+		add_log ("Couldn't find a prototype for glEnable()");
 		return FALSE;
 	}
 
 	if ( (orig_glEnableClientState = (func_glEnableClientState_t) GetProcAddress (hOriginalDll, "glEnableClientState")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEnableClientState()");
+		add_log ("Couldn't find a prototype for glEnableClientState()");
 		return FALSE;
 	}
 
 	if ( (orig_glEnd = (func_glEnd_t) GetProcAddress (hOriginalDll, "glEnd")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEnd()");
+		add_log ("Couldn't find a prototype for glEnd()");
 		return FALSE;
 	}
 
 	if ( (orig_glEndList = (func_glEndList_t) GetProcAddress (hOriginalDll, "glEndList")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEndList()");
+		add_log ("Couldn't find a prototype for glEndList()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord1d = (func_glEvalCoord1d_t) GetProcAddress (hOriginalDll, "glEvalCoord1d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord1d()");
+		add_log ("Couldn't find a prototype for glEvalCoord1d()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord1dv = (func_glEvalCoord1dv_t) GetProcAddress (hOriginalDll, "glEvalCoord1dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord1dv()");
+		add_log ("Couldn't find a prototype for glEvalCoord1dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord1f = (func_glEvalCoord1f_t) GetProcAddress (hOriginalDll, "glEvalCoord1f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord1f()");
+		add_log ("Couldn't find a prototype for glEvalCoord1f()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord1fv = (func_glEvalCoord1fv_t) GetProcAddress (hOriginalDll, "glEvalCoord1fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord1fv()");
+		add_log ("Couldn't find a prototype for glEvalCoord1fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord2d = (func_glEvalCoord2d_t) GetProcAddress (hOriginalDll, "glEvalCoord2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord2d()");
+		add_log ("Couldn't find a prototype for glEvalCoord2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord2dv = (func_glEvalCoord2dv_t) GetProcAddress (hOriginalDll, "glEvalCoord2dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord2dv()");
+		add_log ("Couldn't find a prototype for glEvalCoord2dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord2f = (func_glEvalCoord2f_t) GetProcAddress (hOriginalDll, "glEvalCoord2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord2f()");
+		add_log ("Couldn't find a prototype for glEvalCoord2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalCoord2fv = (func_glEvalCoord2fv_t) GetProcAddress (hOriginalDll, "glEvalCoord2fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalCoord2fv()");
+		add_log ("Couldn't find a prototype for glEvalCoord2fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalMesh1 = (func_glEvalMesh1_t) GetProcAddress (hOriginalDll, "glEvalMesh1")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalMesh1()");
+		add_log ("Couldn't find a prototype for glEvalMesh1()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalMesh2 = (func_glEvalMesh2_t) GetProcAddress (hOriginalDll, "glEvalMesh2")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalMesh2()");
+		add_log ("Couldn't find a prototype for glEvalMesh2()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalPoint1 = (func_glEvalPoint1_t) GetProcAddress (hOriginalDll, "glEvalPoint1")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalPoint1()");
+		add_log ("Couldn't find a prototype for glEvalPoint1()");
 		return FALSE;
 	}
 
 	if ( (orig_glEvalPoint2 = (func_glEvalPoint2_t) GetProcAddress (hOriginalDll, "glEvalPoint2")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glEvalPoint2()");
+		add_log ("Couldn't find a prototype for glEvalPoint2()");
 		return FALSE;
 	}
 
 	if ( (orig_glFeedbackBuffer = (func_glFeedbackBuffer_t) GetProcAddress (hOriginalDll, "glFeedbackBuffer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFeedbackBuffer()");
+		add_log ("Couldn't find a prototype for glFeedbackBuffer()");
 		return FALSE;
 	}
 
 	if ( (orig_glFinish = (func_glFinish_t) GetProcAddress (hOriginalDll, "glFinish")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFinish()");
+		add_log ("Couldn't find a prototype for glFinish()");
 		return FALSE;
 	}
 
 	if ( (orig_glFlush = (func_glFlush_t) GetProcAddress (hOriginalDll, "glFlush")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFlush()");
+		add_log ("Couldn't find a prototype for glFlush()");
 		return FALSE;
 	}
 
 	if ( (orig_glFogf = (func_glFogf_t) GetProcAddress (hOriginalDll, "glFogf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFogf()");
+		add_log ("Couldn't find a prototype for glFogf()");
 		return FALSE;
 	}
 
 	if ( (orig_glFogfv = (func_glFogfv_t) GetProcAddress (hOriginalDll, "glFogfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFogfv()");
+		add_log ("Couldn't find a prototype for glFogfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glFogi = (func_glFogi_t) GetProcAddress (hOriginalDll, "glFogi")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFogi()");
+		add_log ("Couldn't find a prototype for glFogi()");
 		return FALSE;
 	}
 
 	if ( (orig_glFogiv = (func_glFogiv_t) GetProcAddress (hOriginalDll, "glFogiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFogiv()");
+		add_log ("Couldn't find a prototype for glFogiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glFrontFace = (func_glFrontFace_t) GetProcAddress (hOriginalDll, "glFrontFace")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFrontFace()");
+		add_log ("Couldn't find a prototype for glFrontFace()");
 		return FALSE;
 	}
 
 	if ( (orig_glFrustum = (func_glFrustum_t) GetProcAddress (hOriginalDll, "glFrustum")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glFrustum()");
+		add_log ("Couldn't find a prototype for glFrustum()");
 		return FALSE;
 	}
 
 	if ( (orig_glGenLists = (func_glGenLists_t) GetProcAddress (hOriginalDll, "glGenLists")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGenLists()");
+		add_log ("Couldn't find a prototype for glGenLists()");
 		return FALSE;
 	}
 
 	if ( (orig_glGenTextures = (func_glGenTextures_t) GetProcAddress (hOriginalDll, "glGenTextures")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGenTextures()");
+		add_log ("Couldn't find a prototype for glGenTextures()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetBooleanv = (func_glGetBooleanv_t) GetProcAddress (hOriginalDll, "glGetBooleanv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetBooleanv()");
+		add_log ("Couldn't find a prototype for glGetBooleanv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetClipPlane = (func_glGetClipPlane_t) GetProcAddress (hOriginalDll, "glGetClipPlane")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetClipPlane()");
+		add_log ("Couldn't find a prototype for glGetClipPlane()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetDoublev = (func_glGetDoublev_t) GetProcAddress (hOriginalDll, "glGetDoublev")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetDoublev()");
+		add_log ("Couldn't find a prototype for glGetDoublev()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetError = (func_glGetError_t) GetProcAddress (hOriginalDll, "glGetError")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetError()");
+		add_log ("Couldn't find a prototype for glGetError()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetFloatv = (func_glGetFloatv_t) GetProcAddress (hOriginalDll, "glGetFloatv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetFloatv()");
+		add_log ("Couldn't find a prototype for glGetFloatv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetIntegerv = (func_glGetIntegerv_t) GetProcAddress (hOriginalDll, "glGetIntegerv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetIntegerv()");
+		add_log ("Couldn't find a prototype for glGetIntegerv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetLightfv = (func_glGetLightfv_t) GetProcAddress (hOriginalDll, "glGetLightfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetLightfv()");
+		add_log ("Couldn't find a prototype for glGetLightfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetLightiv = (func_glGetLightiv_t) GetProcAddress (hOriginalDll, "glGetLightiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetLightiv()");
+		add_log ("Couldn't find a prototype for glGetLightiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetMapdv = (func_glGetMapdv_t) GetProcAddress (hOriginalDll, "glGetMapdv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetMapdv()");
+		add_log ("Couldn't find a prototype for glGetMapdv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetMapfv = (func_glGetMapfv_t) GetProcAddress (hOriginalDll, "glGetMapfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetMapfv()");
+		add_log ("Couldn't find a prototype for glGetMapfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetMapiv = (func_glGetMapiv_t) GetProcAddress (hOriginalDll, "glGetMapiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetMapiv()");
+		add_log ("Couldn't find a prototype for glGetMapiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetMaterialfv = (func_glGetMaterialfv_t) GetProcAddress (hOriginalDll, "glGetMaterialfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetMaterialfv()");
+		add_log ("Couldn't find a prototype for glGetMaterialfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetMaterialiv = (func_glGetMaterialiv_t) GetProcAddress (hOriginalDll, "glGetMaterialiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetMaterialiv()");
+		add_log ("Couldn't find a prototype for glGetMaterialiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetPixelMapfv = (func_glGetPixelMapfv_t) GetProcAddress (hOriginalDll, "glGetPixelMapfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetPixelMapfv()");
+		add_log ("Couldn't find a prototype for glGetPixelMapfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetPixelMapuiv = (func_glGetPixelMapuiv_t) GetProcAddress (hOriginalDll, "glGetPixelMapuiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetPixelMapuiv()");
+		add_log ("Couldn't find a prototype for glGetPixelMapuiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetPixelMapusv = (func_glGetPixelMapusv_t) GetProcAddress (hOriginalDll, "glGetPixelMapusv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetPixelMapusv()");
+		add_log ("Couldn't find a prototype for glGetPixelMapusv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetPointerv = (func_glGetPointerv_t) GetProcAddress (hOriginalDll, "glGetPointerv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetPointerv()");
+		add_log ("Couldn't find a prototype for glGetPointerv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetPolygonStipple = (func_glGetPolygonStipple_t) GetProcAddress (hOriginalDll, "glGetPolygonStipple")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetPolygonStipple()");
+		add_log ("Couldn't find a prototype for glGetPolygonStipple()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetString = (func_glGetString_t) GetProcAddress (hOriginalDll, "glGetString")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetString()");
+		add_log ("Couldn't find a prototype for glGetString()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexEnvfv = (func_glGetTexEnvfv_t) GetProcAddress (hOriginalDll, "glGetTexEnvfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexEnvfv()");
+		add_log ("Couldn't find a prototype for glGetTexEnvfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexEnviv = (func_glGetTexEnviv_t) GetProcAddress (hOriginalDll, "glGetTexEnviv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexEnviv()");
+		add_log ("Couldn't find a prototype for glGetTexEnviv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexGendv = (func_glGetTexGendv_t) GetProcAddress (hOriginalDll, "glGetTexGendv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexGendv()");
+		add_log ("Couldn't find a prototype for glGetTexGendv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexGenfv = (func_glGetTexGenfv_t) GetProcAddress (hOriginalDll, "glGetTexGenfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexGenfv()");
+		add_log ("Couldn't find a prototype for glGetTexGenfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexGeniv = (func_glGetTexGeniv_t) GetProcAddress (hOriginalDll, "glGetTexGeniv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexGeniv()");
+		add_log ("Couldn't find a prototype for glGetTexGeniv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexImage = (func_glGetTexImage_t) GetProcAddress (hOriginalDll, "glGetTexImage")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexImage()");
+		add_log ("Couldn't find a prototype for glGetTexImage()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexLevelParameterfv = (func_glGetTexLevelParameterfv_t) GetProcAddress (hOriginalDll, "glGetTexLevelParameterfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexLevelParameterfv()");
+		add_log ("Couldn't find a prototype for glGetTexLevelParameterfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexLevelParameteriv = (func_glGetTexLevelParameteriv_t) GetProcAddress (hOriginalDll, "glGetTexLevelParameteriv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexLevelParameteriv()");
+		add_log ("Couldn't find a prototype for glGetTexLevelParameteriv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexParameterfv = (func_glGetTexParameterfv_t) GetProcAddress (hOriginalDll, "glGetTexParameterfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexParameterfv()");
+		add_log ("Couldn't find a prototype for glGetTexParameterfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glGetTexParameteriv = (func_glGetTexParameteriv_t) GetProcAddress (hOriginalDll, "glGetTexParameteriv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glGetTexParameteriv()");
+		add_log ("Couldn't find a prototype for glGetTexParameteriv()");
 		return FALSE;
 	}
 
 	if ( (orig_glHint = (func_glHint_t) GetProcAddress (hOriginalDll, "glHint")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glHint()");
+		add_log ("Couldn't find a prototype for glHint()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexMask = (func_glIndexMask_t) GetProcAddress (hOriginalDll, "glIndexMask")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexMask()");
+		add_log ("Couldn't find a prototype for glIndexMask()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexPointer = (func_glIndexPointer_t) GetProcAddress (hOriginalDll, "glIndexPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexPointer()");
+		add_log ("Couldn't find a prototype for glIndexPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexd = (func_glIndexd_t) GetProcAddress (hOriginalDll, "glIndexd")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexd()");
+		add_log ("Couldn't find a prototype for glIndexd()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexdv = (func_glIndexdv_t) GetProcAddress (hOriginalDll, "glIndexdv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexdv()");
+		add_log ("Couldn't find a prototype for glIndexdv()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexf = (func_glIndexf_t) GetProcAddress (hOriginalDll, "glIndexf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexf()");
+		add_log ("Couldn't find a prototype for glIndexf()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexfv = (func_glIndexfv_t) GetProcAddress (hOriginalDll, "glIndexfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexfv()");
+		add_log ("Couldn't find a prototype for glIndexfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexi = (func_glIndexi_t) GetProcAddress (hOriginalDll, "glIndexi")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexi()");
+		add_log ("Couldn't find a prototype for glIndexi()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexiv = (func_glIndexiv_t) GetProcAddress (hOriginalDll, "glIndexiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexiv()");
+		add_log ("Couldn't find a prototype for glIndexiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexs = (func_glIndexs_t) GetProcAddress (hOriginalDll, "glIndexs")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexs()");
+		add_log ("Couldn't find a prototype for glIndexs()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexsv = (func_glIndexsv_t) GetProcAddress (hOriginalDll, "glIndexsv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexsv()");
+		add_log ("Couldn't find a prototype for glIndexsv()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexub = (func_glIndexub_t) GetProcAddress (hOriginalDll, "glIndexub")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexub()");
+		add_log ("Couldn't find a prototype for glIndexub()");
 		return FALSE;
 	}
 
 	if ( (orig_glIndexubv = (func_glIndexubv_t) GetProcAddress (hOriginalDll, "glIndexubv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIndexubv()");
+		add_log ("Couldn't find a prototype for glIndexubv()");
 		return FALSE;
 	}
 
 	if ( (orig_glInitNames = (func_glInitNames_t) GetProcAddress (hOriginalDll, "glInitNames")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glInitNames()");
+		add_log ("Couldn't find a prototype for glInitNames()");
 		return FALSE;
 	}
 
 	if ( (orig_glInterleavedArrays = (func_glInterleavedArrays_t) GetProcAddress (hOriginalDll, "glInterleavedArrays")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glInterleavedArrays()");
+		add_log ("Couldn't find a prototype for glInterleavedArrays()");
 		return FALSE;
 	}
 
 	if ( (orig_glIsEnabled = (func_glIsEnabled_t) GetProcAddress (hOriginalDll, "glIsEnabled")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIsEnabled()");
+		add_log ("Couldn't find a prototype for glIsEnabled()");
 		return FALSE;
 	}
 
 	if ( (orig_glIsList = (func_glIsList_t) GetProcAddress (hOriginalDll, "glIsList")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIsList()");
+		add_log ("Couldn't find a prototype for glIsList()");
 		return FALSE;
 	}
 
 	if ( (orig_glIsTexture = (func_glIsTexture_t) GetProcAddress (hOriginalDll, "glIsTexture")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glIsTexture()");
+		add_log ("Couldn't find a prototype for glIsTexture()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightModelf = (func_glLightModelf_t) GetProcAddress (hOriginalDll, "glLightModelf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightModelf()");
+		add_log ("Couldn't find a prototype for glLightModelf()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightModelfv = (func_glLightModelfv_t) GetProcAddress (hOriginalDll, "glLightModelfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightModelfv()");
+		add_log ("Couldn't find a prototype for glLightModelfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightModeli = (func_glLightModeli_t) GetProcAddress (hOriginalDll, "glLightModeli")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightModeli()");
+		add_log ("Couldn't find a prototype for glLightModeli()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightModeliv = (func_glLightModeliv_t) GetProcAddress (hOriginalDll, "glLightModeliv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightModeliv()");
+		add_log ("Couldn't find a prototype for glLightModeliv()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightf = (func_glLightf_t) GetProcAddress (hOriginalDll, "glLightf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightf()");
+		add_log ("Couldn't find a prototype for glLightf()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightfv = (func_glLightfv_t) GetProcAddress (hOriginalDll, "glLightfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightfv()");
+		add_log ("Couldn't find a prototype for glLightfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glLighti = (func_glLighti_t) GetProcAddress (hOriginalDll, "glLighti")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLighti()");
+		add_log ("Couldn't find a prototype for glLighti()");
 		return FALSE;
 	}
 
 	if ( (orig_glLightiv = (func_glLightiv_t) GetProcAddress (hOriginalDll, "glLightiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLightiv()");
+		add_log ("Couldn't find a prototype for glLightiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glLineStipple = (func_glLineStipple_t) GetProcAddress (hOriginalDll, "glLineStipple")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLineStipple()");
+		add_log ("Couldn't find a prototype for glLineStipple()");
 		return FALSE;
 	}
 
 	if ( (orig_glLineWidth = (func_glLineWidth_t) GetProcAddress (hOriginalDll, "glLineWidth")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLineWidth()");
+		add_log ("Couldn't find a prototype for glLineWidth()");
 		return FALSE;
 	}
 
 	if ( (orig_glListBase = (func_glListBase_t) GetProcAddress (hOriginalDll, "glListBase")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glListBase()");
+		add_log ("Couldn't find a prototype for glListBase()");
 		return FALSE;
 	}
 
 	if ( (orig_glLoadIdentity = (func_glLoadIdentity_t) GetProcAddress (hOriginalDll, "glLoadIdentity")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLoadIdentity()");
+		add_log ("Couldn't find a prototype for glLoadIdentity()");
 		return FALSE;
 	}
 
 	if ( (orig_glLoadMatrixd = (func_glLoadMatrixd_t) GetProcAddress (hOriginalDll, "glLoadMatrixd")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLoadMatrixd()");
+		add_log ("Couldn't find a prototype for glLoadMatrixd()");
 		return FALSE;
 	}
 
 	if ( (orig_glLoadMatrixf = (func_glLoadMatrixf_t) GetProcAddress (hOriginalDll, "glLoadMatrixf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLoadMatrixf()");
+		add_log ("Couldn't find a prototype for glLoadMatrixf()");
 		return FALSE;
 	}
 
 	if ( (orig_glLoadName = (func_glLoadName_t) GetProcAddress (hOriginalDll, "glLoadName")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLoadName()");
+		add_log ("Couldn't find a prototype for glLoadName()");
 		return FALSE;
 	}
 
 	if ( (orig_glLogicOp = (func_glLogicOp_t) GetProcAddress (hOriginalDll, "glLogicOp")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glLogicOp()");
+		add_log ("Couldn't find a prototype for glLogicOp()");
 		return FALSE;
 	}
 
 	if ( (orig_glMap1d = (func_glMap1d_t) GetProcAddress (hOriginalDll, "glMap1d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMap1d()");
+		add_log ("Couldn't find a prototype for glMap1d()");
 		return FALSE;
 	}
 
 	if ( (orig_glMap1f = (func_glMap1f_t) GetProcAddress (hOriginalDll, "glMap1f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMap1f()");
+		add_log ("Couldn't find a prototype for glMap1f()");
 		return FALSE;
 	}
 
 	if ( (orig_glMap2d = (func_glMap2d_t) GetProcAddress (hOriginalDll, "glMap2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMap2d()");
+		add_log ("Couldn't find a prototype for glMap2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glMap2f = (func_glMap2f_t) GetProcAddress (hOriginalDll, "glMap2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMap2f()");
+		add_log ("Couldn't find a prototype for glMap2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glMapGrid1d = (func_glMapGrid1d_t) GetProcAddress (hOriginalDll, "glMapGrid1d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMapGrid1d()");
+		add_log ("Couldn't find a prototype for glMapGrid1d()");
 		return FALSE;
 	}
 
 	if ( (orig_glMapGrid1f = (func_glMapGrid1f_t) GetProcAddress (hOriginalDll, "glMapGrid1f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMapGrid1f()");
+		add_log ("Couldn't find a prototype for glMapGrid1f()");
 		return FALSE;
 	}
 
 	if ( (orig_glMapGrid2d = (func_glMapGrid2d_t) GetProcAddress (hOriginalDll, "glMapGrid2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMapGrid2d()");
+		add_log ("Couldn't find a prototype for glMapGrid2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glMapGrid2f = (func_glMapGrid2f_t) GetProcAddress (hOriginalDll, "glMapGrid2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMapGrid2f()");
+		add_log ("Couldn't find a prototype for glMapGrid2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glMaterialf = (func_glMaterialf_t) GetProcAddress (hOriginalDll, "glMaterialf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMaterialf()");
+		add_log ("Couldn't find a prototype for glMaterialf()");
 		return FALSE;
 	}
 
 	if ( (orig_glMaterialfv = (func_glMaterialfv_t) GetProcAddress (hOriginalDll, "glMaterialfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMaterialfv()");
+		add_log ("Couldn't find a prototype for glMaterialfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glMateriali = (func_glMateriali_t) GetProcAddress (hOriginalDll, "glMateriali")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMateriali()");
+		add_log ("Couldn't find a prototype for glMateriali()");
 		return FALSE;
 	}
 
 	if ( (orig_glMaterialiv = (func_glMaterialiv_t) GetProcAddress (hOriginalDll, "glMaterialiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMaterialiv()");
+		add_log ("Couldn't find a prototype for glMaterialiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glMatrixMode = (func_glMatrixMode_t) GetProcAddress (hOriginalDll, "glMatrixMode")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMatrixMode()");
+		add_log ("Couldn't find a prototype for glMatrixMode()");
 		return FALSE;
 	}
 
 	if ( (orig_glMultMatrixd = (func_glMultMatrixd_t) GetProcAddress (hOriginalDll, "glMultMatrixd")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMultMatrixd()");
+		add_log ("Couldn't find a prototype for glMultMatrixd()");
 		return FALSE;
 	}
 
 	if ( (orig_glMultMatrixf = (func_glMultMatrixf_t) GetProcAddress (hOriginalDll, "glMultMatrixf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glMultMatrixf()");
+		add_log ("Couldn't find a prototype for glMultMatrixf()");
 		return FALSE;
 	}
 
 	if ( (orig_glNewList = (func_glNewList_t) GetProcAddress (hOriginalDll, "glNewList")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNewList()");
+		add_log ("Couldn't find a prototype for glNewList()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3b = (func_glNormal3b_t) GetProcAddress (hOriginalDll, "glNormal3b")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3b()");
+		add_log ("Couldn't find a prototype for glNormal3b()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3bv = (func_glNormal3bv_t) GetProcAddress (hOriginalDll, "glNormal3bv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3bv()");
+		add_log ("Couldn't find a prototype for glNormal3bv()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3d = (func_glNormal3d_t) GetProcAddress (hOriginalDll, "glNormal3d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3d()");
+		add_log ("Couldn't find a prototype for glNormal3d()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3dv = (func_glNormal3dv_t) GetProcAddress (hOriginalDll, "glNormal3dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3dv()");
+		add_log ("Couldn't find a prototype for glNormal3dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3f = (func_glNormal3f_t) GetProcAddress (hOriginalDll, "glNormal3f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3f()");
+		add_log ("Couldn't find a prototype for glNormal3f()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3fv = (func_glNormal3fv_t) GetProcAddress (hOriginalDll, "glNormal3fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3fv()");
+		add_log ("Couldn't find a prototype for glNormal3fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3i = (func_glNormal3i_t) GetProcAddress (hOriginalDll, "glNormal3i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3i()");
+		add_log ("Couldn't find a prototype for glNormal3i()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3iv = (func_glNormal3iv_t) GetProcAddress (hOriginalDll, "glNormal3iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3iv()");
+		add_log ("Couldn't find a prototype for glNormal3iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3s = (func_glNormal3s_t) GetProcAddress (hOriginalDll, "glNormal3s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3s()");
+		add_log ("Couldn't find a prototype for glNormal3s()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormal3sv = (func_glNormal3sv_t) GetProcAddress (hOriginalDll, "glNormal3sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormal3sv()");
+		add_log ("Couldn't find a prototype for glNormal3sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glNormalPointer = (func_glNormalPointer_t) GetProcAddress (hOriginalDll, "glNormalPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glNormalPointer()");
+		add_log ("Couldn't find a prototype for glNormalPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glOrtho = (func_glOrtho_t) GetProcAddress (hOriginalDll, "glOrtho")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glOrtho()");
+		add_log ("Couldn't find a prototype for glOrtho()");
 		return FALSE;
 	}
 
 	if ( (orig_glPassThrough = (func_glPassThrough_t) GetProcAddress (hOriginalDll, "glPassThrough")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPassThrough()");
+		add_log ("Couldn't find a prototype for glPassThrough()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelMapfv = (func_glPixelMapfv_t) GetProcAddress (hOriginalDll, "glPixelMapfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelMapfv()");
+		add_log ("Couldn't find a prototype for glPixelMapfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelMapuiv = (func_glPixelMapuiv_t) GetProcAddress (hOriginalDll, "glPixelMapuiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelMapuiv()");
+		add_log ("Couldn't find a prototype for glPixelMapuiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelMapusv = (func_glPixelMapusv_t) GetProcAddress (hOriginalDll, "glPixelMapusv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelMapusv()");
+		add_log ("Couldn't find a prototype for glPixelMapusv()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelStoref = (func_glPixelStoref_t) GetProcAddress (hOriginalDll, "glPixelStoref")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelStoref()");
+		add_log ("Couldn't find a prototype for glPixelStoref()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelStorei = (func_glPixelStorei_t) GetProcAddress (hOriginalDll, "glPixelStorei")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelStorei()");
+		add_log ("Couldn't find a prototype for glPixelStorei()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelTransferf = (func_glPixelTransferf_t) GetProcAddress (hOriginalDll, "glPixelTransferf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelTransferf()");
+		add_log ("Couldn't find a prototype for glPixelTransferf()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelTransferi = (func_glPixelTransferi_t) GetProcAddress (hOriginalDll, "glPixelTransferi")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelTransferi()");
+		add_log ("Couldn't find a prototype for glPixelTransferi()");
 		return FALSE;
 	}
 
 	if ( (orig_glPixelZoom = (func_glPixelZoom_t) GetProcAddress (hOriginalDll, "glPixelZoom")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPixelZoom()");
+		add_log ("Couldn't find a prototype for glPixelZoom()");
 		return FALSE;
 	}
 
 	if ( (orig_glPointSize = (func_glPointSize_t) GetProcAddress (hOriginalDll, "glPointSize")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPointSize()");
+		add_log ("Couldn't find a prototype for glPointSize()");
 		return FALSE;
 	}
 
 	if ( (orig_glPolygonMode = (func_glPolygonMode_t) GetProcAddress (hOriginalDll, "glPolygonMode")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPolygonMode()");
+		add_log ("Couldn't find a prototype for glPolygonMode()");
 		return FALSE;
 	}
 
 	if ( (orig_glPolygonOffset = (func_glPolygonOffset_t) GetProcAddress (hOriginalDll, "glPolygonOffset")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPolygonOffset()");
+		add_log ("Couldn't find a prototype for glPolygonOffset()");
 		return FALSE;
 	}
 
 	if ( (orig_glPolygonStipple = (func_glPolygonStipple_t) GetProcAddress (hOriginalDll, "glPolygonStipple")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPolygonStipple()");
+		add_log ("Couldn't find a prototype for glPolygonStipple()");
 		return FALSE;
 	}
 
 	if ( (orig_glPopAttrib = (func_glPopAttrib_t) GetProcAddress (hOriginalDll, "glPopAttrib")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPopAttrib()");
+		add_log ("Couldn't find a prototype for glPopAttrib()");
 		return FALSE;
 	}
 
 	if ( (orig_glPopClientAttrib = (func_glPopClientAttrib_t) GetProcAddress (hOriginalDll, "glPopClientAttrib")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPopClientAttrib()");
+		add_log ("Couldn't find a prototype for glPopClientAttrib()");
 		return FALSE;
 	}
 
 	if ( (orig_glPopMatrix = (func_glPopMatrix_t) GetProcAddress (hOriginalDll, "glPopMatrix")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPopMatrix()");
+		add_log ("Couldn't find a prototype for glPopMatrix()");
 		return FALSE;
 	}
 
 	if ( (orig_glPopName = (func_glPopName_t) GetProcAddress (hOriginalDll, "glPopName")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPopName()");
+		add_log ("Couldn't find a prototype for glPopName()");
 		return FALSE;
 	}
 
 	if ( (orig_glPrioritizeTextures = (func_glPrioritizeTextures_t) GetProcAddress (hOriginalDll, "glPrioritizeTextures")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPrioritizeTextures()");
+		add_log ("Couldn't find a prototype for glPrioritizeTextures()");
 		return FALSE;
 	}
 
 	if ( (orig_glPushAttrib = (func_glPushAttrib_t) GetProcAddress (hOriginalDll, "glPushAttrib")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPushAttrib()");
+		add_log ("Couldn't find a prototype for glPushAttrib()");
 		return FALSE;
 	}
 
 	if ( (orig_glPushClientAttrib = (func_glPushClientAttrib_t) GetProcAddress (hOriginalDll, "glPushClientAttrib")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPushClientAttrib()");
+		add_log ("Couldn't find a prototype for glPushClientAttrib()");
 		return FALSE;
 	}
 
 	if ( (orig_glPushMatrix = (func_glPushMatrix_t) GetProcAddress (hOriginalDll, "glPushMatrix")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPushMatrix()");
+		add_log ("Couldn't find a prototype for glPushMatrix()");
 		return FALSE;
 	}
 
 	if ( (orig_glPushName = (func_glPushName_t) GetProcAddress (hOriginalDll, "glPushName")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glPushName()");
+		add_log ("Couldn't find a prototype for glPushName()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2d = (func_glRasterPos2d_t) GetProcAddress (hOriginalDll, "glRasterPos2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2d()");
+		add_log ("Couldn't find a prototype for glRasterPos2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2dv = (func_glRasterPos2dv_t) GetProcAddress (hOriginalDll, "glRasterPos2dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2dv()");
+		add_log ("Couldn't find a prototype for glRasterPos2dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2f = (func_glRasterPos2f_t) GetProcAddress (hOriginalDll, "glRasterPos2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2f()");
+		add_log ("Couldn't find a prototype for glRasterPos2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2fv = (func_glRasterPos2fv_t) GetProcAddress (hOriginalDll, "glRasterPos2fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2fv()");
+		add_log ("Couldn't find a prototype for glRasterPos2fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2i = (func_glRasterPos2i_t) GetProcAddress (hOriginalDll, "glRasterPos2i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2i()");
+		add_log ("Couldn't find a prototype for glRasterPos2i()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2iv = (func_glRasterPos2iv_t) GetProcAddress (hOriginalDll, "glRasterPos2iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2iv()");
+		add_log ("Couldn't find a prototype for glRasterPos2iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2s = (func_glRasterPos2s_t) GetProcAddress (hOriginalDll, "glRasterPos2s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2s()");
+		add_log ("Couldn't find a prototype for glRasterPos2s()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos2sv = (func_glRasterPos2sv_t) GetProcAddress (hOriginalDll, "glRasterPos2sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos2sv()");
+		add_log ("Couldn't find a prototype for glRasterPos2sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3d = (func_glRasterPos3d_t) GetProcAddress (hOriginalDll, "glRasterPos3d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3d()");
+		add_log ("Couldn't find a prototype for glRasterPos3d()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3dv = (func_glRasterPos3dv_t) GetProcAddress (hOriginalDll, "glRasterPos3dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3dv()");
+		add_log ("Couldn't find a prototype for glRasterPos3dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3f = (func_glRasterPos3f_t) GetProcAddress (hOriginalDll, "glRasterPos3f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3f()");
+		add_log ("Couldn't find a prototype for glRasterPos3f()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3fv = (func_glRasterPos3fv_t) GetProcAddress (hOriginalDll, "glRasterPos3fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3fv()");
+		add_log ("Couldn't find a prototype for glRasterPos3fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3i = (func_glRasterPos3i_t) GetProcAddress (hOriginalDll, "glRasterPos3i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3i()");
+		add_log ("Couldn't find a prototype for glRasterPos3i()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3iv = (func_glRasterPos3iv_t) GetProcAddress (hOriginalDll, "glRasterPos3iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3iv()");
+		add_log ("Couldn't find a prototype for glRasterPos3iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3s = (func_glRasterPos3s_t) GetProcAddress (hOriginalDll, "glRasterPos3s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3s()");
+		add_log ("Couldn't find a prototype for glRasterPos3s()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos3sv = (func_glRasterPos3sv_t) GetProcAddress (hOriginalDll, "glRasterPos3sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos3sv()");
+		add_log ("Couldn't find a prototype for glRasterPos3sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4d = (func_glRasterPos4d_t) GetProcAddress (hOriginalDll, "glRasterPos4d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4d()");
+		add_log ("Couldn't find a prototype for glRasterPos4d()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4dv = (func_glRasterPos4dv_t) GetProcAddress (hOriginalDll, "glRasterPos4dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4dv()");
+		add_log ("Couldn't find a prototype for glRasterPos4dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4f = (func_glRasterPos4f_t) GetProcAddress (hOriginalDll, "glRasterPos4f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4f()");
+		add_log ("Couldn't find a prototype for glRasterPos4f()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4fv = (func_glRasterPos4fv_t) GetProcAddress (hOriginalDll, "glRasterPos4fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4fv()");
+		add_log ("Couldn't find a prototype for glRasterPos4fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4i = (func_glRasterPos4i_t) GetProcAddress (hOriginalDll, "glRasterPos4i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4i()");
+		add_log ("Couldn't find a prototype for glRasterPos4i()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4iv = (func_glRasterPos4iv_t) GetProcAddress (hOriginalDll, "glRasterPos4iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4iv()");
+		add_log ("Couldn't find a prototype for glRasterPos4iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4s = (func_glRasterPos4s_t) GetProcAddress (hOriginalDll, "glRasterPos4s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4s()");
+		add_log ("Couldn't find a prototype for glRasterPos4s()");
 		return FALSE;
 	}
 
 	if ( (orig_glRasterPos4sv = (func_glRasterPos4sv_t) GetProcAddress (hOriginalDll, "glRasterPos4sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRasterPos4sv()");
+		add_log ("Couldn't find a prototype for glRasterPos4sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glReadBuffer = (func_glReadBuffer_t) GetProcAddress (hOriginalDll, "glReadBuffer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glReadBuffer()");
+		add_log ("Couldn't find a prototype for glReadBuffer()");
 		return FALSE;
 	}
 
 	if ( (orig_glReadPixels = (func_glReadPixels_t) GetProcAddress (hOriginalDll, "glReadPixels")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glReadPixels()");
+		add_log ("Couldn't find a prototype for glReadPixels()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectd = (func_glRectd_t) GetProcAddress (hOriginalDll, "glRectd")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectd()");
+		add_log ("Couldn't find a prototype for glRectd()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectdv = (func_glRectdv_t) GetProcAddress (hOriginalDll, "glRectdv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectdv()");
+		add_log ("Couldn't find a prototype for glRectdv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectf = (func_glRectf_t) GetProcAddress (hOriginalDll, "glRectf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectf()");
+		add_log ("Couldn't find a prototype for glRectf()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectfv = (func_glRectfv_t) GetProcAddress (hOriginalDll, "glRectfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectfv()");
+		add_log ("Couldn't find a prototype for glRectfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRecti = (func_glRecti_t) GetProcAddress (hOriginalDll, "glRecti")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRecti()");
+		add_log ("Couldn't find a prototype for glRecti()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectiv = (func_glRectiv_t) GetProcAddress (hOriginalDll, "glRectiv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectiv()");
+		add_log ("Couldn't find a prototype for glRectiv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRects = (func_glRects_t) GetProcAddress (hOriginalDll, "glRects")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRects()");
+		add_log ("Couldn't find a prototype for glRects()");
 		return FALSE;
 	}
 
 	if ( (orig_glRectsv = (func_glRectsv_t) GetProcAddress (hOriginalDll, "glRectsv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRectsv()");
+		add_log ("Couldn't find a prototype for glRectsv()");
 		return FALSE;
 	}
 
 	if ( (orig_glRenderMode = (func_glRenderMode_t) GetProcAddress (hOriginalDll, "glRenderMode")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRenderMode()");
+		add_log ("Couldn't find a prototype for glRenderMode()");
 		return FALSE;
 	}
 
 	if ( (orig_glRotated = (func_glRotated_t) GetProcAddress (hOriginalDll, "glRotated")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRotated()");
+		add_log ("Couldn't find a prototype for glRotated()");
 		return FALSE;
 	}
 
 	if ( (orig_glRotatef = (func_glRotatef_t) GetProcAddress (hOriginalDll, "glRotatef")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glRotatef()");
+		add_log ("Couldn't find a prototype for glRotatef()");
 		return FALSE;
 	}
 
 	if ( (orig_glScaled = (func_glScaled_t) GetProcAddress (hOriginalDll, "glScaled")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glScaled()");
+		add_log ("Couldn't find a prototype for glScaled()");
 		return FALSE;
 	}
 
 	if ( (orig_glScalef = (func_glScalef_t) GetProcAddress (hOriginalDll, "glScalef")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glScalef()");
+		add_log ("Couldn't find a prototype for glScalef()");
 		return FALSE;
 	}
 
 	if ( (orig_glScissor = (func_glScissor_t) GetProcAddress (hOriginalDll, "glScissor")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glScissor()");
+		add_log ("Couldn't find a prototype for glScissor()");
 		return FALSE;
 	}
 
 	if ( (orig_glSelectBuffer = (func_glSelectBuffer_t) GetProcAddress (hOriginalDll, "glSelectBuffer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glSelectBuffer()");
+		add_log ("Couldn't find a prototype for glSelectBuffer()");
 		return FALSE;
 	}
 
 	if ( (orig_glShadeModel = (func_glShadeModel_t) GetProcAddress (hOriginalDll, "glShadeModel")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glShadeModel()");
+		add_log ("Couldn't find a prototype for glShadeModel()");
 		return FALSE;
 	}
 
 	if ( (orig_glStencilFunc = (func_glStencilFunc_t) GetProcAddress (hOriginalDll, "glStencilFunc")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glStencilFunc()");
+		add_log ("Couldn't find a prototype for glStencilFunc()");
 		return FALSE;
 	}
 
 	if ( (orig_glStencilMask = (func_glStencilMask_t) GetProcAddress (hOriginalDll, "glStencilMask")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glStencilMask()");
+		add_log ("Couldn't find a prototype for glStencilMask()");
 		return FALSE;
 	}
 
 	if ( (orig_glStencilOp = (func_glStencilOp_t) GetProcAddress (hOriginalDll, "glStencilOp")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glStencilOp()");
+		add_log ("Couldn't find a prototype for glStencilOp()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1d = (func_glTexCoord1d_t) GetProcAddress (hOriginalDll, "glTexCoord1d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1d()");
+		add_log ("Couldn't find a prototype for glTexCoord1d()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1dv = (func_glTexCoord1dv_t) GetProcAddress (hOriginalDll, "glTexCoord1dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1dv()");
+		add_log ("Couldn't find a prototype for glTexCoord1dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1f = (func_glTexCoord1f_t) GetProcAddress (hOriginalDll, "glTexCoord1f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1f()");
+		add_log ("Couldn't find a prototype for glTexCoord1f()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1fv = (func_glTexCoord1fv_t) GetProcAddress (hOriginalDll, "glTexCoord1fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1fv()");
+		add_log ("Couldn't find a prototype for glTexCoord1fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1i = (func_glTexCoord1i_t) GetProcAddress (hOriginalDll, "glTexCoord1i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1i()");
+		add_log ("Couldn't find a prototype for glTexCoord1i()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1iv = (func_glTexCoord1iv_t) GetProcAddress (hOriginalDll, "glTexCoord1iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1iv()");
+		add_log ("Couldn't find a prototype for glTexCoord1iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1s = (func_glTexCoord1s_t) GetProcAddress (hOriginalDll, "glTexCoord1s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1s()");
+		add_log ("Couldn't find a prototype for glTexCoord1s()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord1sv = (func_glTexCoord1sv_t) GetProcAddress (hOriginalDll, "glTexCoord1sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord1sv()");
+		add_log ("Couldn't find a prototype for glTexCoord1sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2d = (func_glTexCoord2d_t) GetProcAddress (hOriginalDll, "glTexCoord2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2d()");
+		add_log ("Couldn't find a prototype for glTexCoord2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2dv = (func_glTexCoord2dv_t) GetProcAddress (hOriginalDll, "glTexCoord2dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2dv()");
+		add_log ("Couldn't find a prototype for glTexCoord2dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2f = (func_glTexCoord2f_t) GetProcAddress (hOriginalDll, "glTexCoord2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2f()");
+		add_log ("Couldn't find a prototype for glTexCoord2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2fv = (func_glTexCoord2fv_t) GetProcAddress (hOriginalDll, "glTexCoord2fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2fv()");
+		add_log ("Couldn't find a prototype for glTexCoord2fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2i = (func_glTexCoord2i_t) GetProcAddress (hOriginalDll, "glTexCoord2i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2i()");
+		add_log ("Couldn't find a prototype for glTexCoord2i()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2iv = (func_glTexCoord2iv_t) GetProcAddress (hOriginalDll, "glTexCoord2iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2iv()");
+		add_log ("Couldn't find a prototype for glTexCoord2iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2s = (func_glTexCoord2s_t) GetProcAddress (hOriginalDll, "glTexCoord2s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2s()");
+		add_log ("Couldn't find a prototype for glTexCoord2s()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord2sv = (func_glTexCoord2sv_t) GetProcAddress (hOriginalDll, "glTexCoord2sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord2sv()");
+		add_log ("Couldn't find a prototype for glTexCoord2sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3d = (func_glTexCoord3d_t) GetProcAddress (hOriginalDll, "glTexCoord3d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3d()");
+		add_log ("Couldn't find a prototype for glTexCoord3d()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3dv = (func_glTexCoord3dv_t) GetProcAddress (hOriginalDll, "glTexCoord3dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3dv()");
+		add_log ("Couldn't find a prototype for glTexCoord3dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3f = (func_glTexCoord3f_t) GetProcAddress (hOriginalDll, "glTexCoord3f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3f()");
+		add_log ("Couldn't find a prototype for glTexCoord3f()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3fv = (func_glTexCoord3fv_t) GetProcAddress (hOriginalDll, "glTexCoord3fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3fv()");
+		add_log ("Couldn't find a prototype for glTexCoord3fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3i = (func_glTexCoord3i_t) GetProcAddress (hOriginalDll, "glTexCoord3i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3i()");
+		add_log ("Couldn't find a prototype for glTexCoord3i()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3iv = (func_glTexCoord3iv_t) GetProcAddress (hOriginalDll, "glTexCoord3iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3iv()");
+		add_log ("Couldn't find a prototype for glTexCoord3iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3s = (func_glTexCoord3s_t) GetProcAddress (hOriginalDll, "glTexCoord3s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3s()");
+		add_log ("Couldn't find a prototype for glTexCoord3s()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord3sv = (func_glTexCoord3sv_t) GetProcAddress (hOriginalDll, "glTexCoord3sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord3sv()");
+		add_log ("Couldn't find a prototype for glTexCoord3sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4d = (func_glTexCoord4d_t) GetProcAddress (hOriginalDll, "glTexCoord4d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4d()");
+		add_log ("Couldn't find a prototype for glTexCoord4d()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4dv = (func_glTexCoord4dv_t) GetProcAddress (hOriginalDll, "glTexCoord4dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4dv()");
+		add_log ("Couldn't find a prototype for glTexCoord4dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4f = (func_glTexCoord4f_t) GetProcAddress (hOriginalDll, "glTexCoord4f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4f()");
+		add_log ("Couldn't find a prototype for glTexCoord4f()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4fv = (func_glTexCoord4fv_t) GetProcAddress (hOriginalDll, "glTexCoord4fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4fv()");
+		add_log ("Couldn't find a prototype for glTexCoord4fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4i = (func_glTexCoord4i_t) GetProcAddress (hOriginalDll, "glTexCoord4i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4i()");
+		add_log ("Couldn't find a prototype for glTexCoord4i()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4iv = (func_glTexCoord4iv_t) GetProcAddress (hOriginalDll, "glTexCoord4iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4iv()");
+		add_log ("Couldn't find a prototype for glTexCoord4iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4s = (func_glTexCoord4s_t) GetProcAddress (hOriginalDll, "glTexCoord4s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4s()");
+		add_log ("Couldn't find a prototype for glTexCoord4s()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoord4sv = (func_glTexCoord4sv_t) GetProcAddress (hOriginalDll, "glTexCoord4sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoord4sv()");
+		add_log ("Couldn't find a prototype for glTexCoord4sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexCoordPointer = (func_glTexCoordPointer_t) GetProcAddress (hOriginalDll, "glTexCoordPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexCoordPointer()");
+		add_log ("Couldn't find a prototype for glTexCoordPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexEnvf = (func_glTexEnvf_t) GetProcAddress (hOriginalDll, "glTexEnvf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexEnvf()");
+		add_log ("Couldn't find a prototype for glTexEnvf()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexEnvfv = (func_glTexEnvfv_t) GetProcAddress (hOriginalDll, "glTexEnvfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexEnvfv()");
+		add_log ("Couldn't find a prototype for glTexEnvfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexEnvi = (func_glTexEnvi_t) GetProcAddress (hOriginalDll, "glTexEnvi")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexEnvi()");
+		add_log ("Couldn't find a prototype for glTexEnvi()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexEnviv = (func_glTexEnviv_t) GetProcAddress (hOriginalDll, "glTexEnviv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexEnviv()");
+		add_log ("Couldn't find a prototype for glTexEnviv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGend = (func_glTexGend_t) GetProcAddress (hOriginalDll, "glTexGend")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGend()");
+		add_log ("Couldn't find a prototype for glTexGend()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGendv = (func_glTexGendv_t) GetProcAddress (hOriginalDll, "glTexGendv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGendv()");
+		add_log ("Couldn't find a prototype for glTexGendv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGenf = (func_glTexGenf_t) GetProcAddress (hOriginalDll, "glTexGenf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGenf()");
+		add_log ("Couldn't find a prototype for glTexGenf()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGenfv = (func_glTexGenfv_t) GetProcAddress (hOriginalDll, "glTexGenfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGenfv()");
+		add_log ("Couldn't find a prototype for glTexGenfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGeni = (func_glTexGeni_t) GetProcAddress (hOriginalDll, "glTexGeni")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGeni()");
+		add_log ("Couldn't find a prototype for glTexGeni()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexGeniv = (func_glTexGeniv_t) GetProcAddress (hOriginalDll, "glTexGeniv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexGeniv()");
+		add_log ("Couldn't find a prototype for glTexGeniv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexImage1D = (func_glTexImage1D_t) GetProcAddress (hOriginalDll, "glTexImage1D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexImage1D()");
+		add_log ("Couldn't find a prototype for glTexImage1D()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexImage2D = (func_glTexImage2D_t) GetProcAddress (hOriginalDll, "glTexImage2D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexImage2D()");
+		add_log ("Couldn't find a prototype for glTexImage2D()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexParameterf = (func_glTexParameterf_t) GetProcAddress (hOriginalDll, "glTexParameterf")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexParameterf()");
+		add_log ("Couldn't find a prototype for glTexParameterf()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexParameterfv = (func_glTexParameterfv_t) GetProcAddress (hOriginalDll, "glTexParameterfv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexParameterfv()");
+		add_log ("Couldn't find a prototype for glTexParameterfv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexParameteri = (func_glTexParameteri_t) GetProcAddress (hOriginalDll, "glTexParameteri")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexParameteri()");
+		add_log ("Couldn't find a prototype for glTexParameteri()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexParameteriv = (func_glTexParameteriv_t) GetProcAddress (hOriginalDll, "glTexParameteriv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexParameteriv()");
+		add_log ("Couldn't find a prototype for glTexParameteriv()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexSubImage1D = (func_glTexSubImage1D_t) GetProcAddress (hOriginalDll, "glTexSubImage1D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexSubImage1D()");
+		add_log ("Couldn't find a prototype for glTexSubImage1D()");
 		return FALSE;
 	}
 
 	if ( (orig_glTexSubImage2D = (func_glTexSubImage2D_t) GetProcAddress (hOriginalDll, "glTexSubImage2D")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTexSubImage2D()");
+		add_log ("Couldn't find a prototype for glTexSubImage2D()");
 		return FALSE;
 	}
 
 	if ( (orig_glTranslated = (func_glTranslated_t) GetProcAddress (hOriginalDll, "glTranslated")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTranslated()");
+		add_log ("Couldn't find a prototype for glTranslated()");
 		return FALSE;
 	}
 
 	if ( (orig_glTranslatef = (func_glTranslatef_t) GetProcAddress (hOriginalDll, "glTranslatef")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glTranslatef()");
+		add_log ("Couldn't find a prototype for glTranslatef()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2d = (func_glVertex2d_t) GetProcAddress (hOriginalDll, "glVertex2d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2d()");
+		add_log ("Couldn't find a prototype for glVertex2d()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2dv = (func_glVertex2dv_t) GetProcAddress (hOriginalDll, "glVertex2dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2dv()");
+		add_log ("Couldn't find a prototype for glVertex2dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2f = (func_glVertex2f_t) GetProcAddress (hOriginalDll, "glVertex2f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2f()");
+		add_log ("Couldn't find a prototype for glVertex2f()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2fv = (func_glVertex2fv_t) GetProcAddress (hOriginalDll, "glVertex2fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2fv()");
+		add_log ("Couldn't find a prototype for glVertex2fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2i = (func_glVertex2i_t) GetProcAddress (hOriginalDll, "glVertex2i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2i()");
+		add_log ("Couldn't find a prototype for glVertex2i()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2iv = (func_glVertex2iv_t) GetProcAddress (hOriginalDll, "glVertex2iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2iv()");
+		add_log ("Couldn't find a prototype for glVertex2iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2s = (func_glVertex2s_t) GetProcAddress (hOriginalDll, "glVertex2s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2s()");
+		add_log ("Couldn't find a prototype for glVertex2s()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex2sv = (func_glVertex2sv_t) GetProcAddress (hOriginalDll, "glVertex2sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex2sv()");
+		add_log ("Couldn't find a prototype for glVertex2sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3d = (func_glVertex3d_t) GetProcAddress (hOriginalDll, "glVertex3d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3d()");
+		add_log ("Couldn't find a prototype for glVertex3d()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3dv = (func_glVertex3dv_t) GetProcAddress (hOriginalDll, "glVertex3dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3dv()");
+		add_log ("Couldn't find a prototype for glVertex3dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3f = (func_glVertex3f_t) GetProcAddress (hOriginalDll, "glVertex3f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3f()");
+		add_log ("Couldn't find a prototype for glVertex3f()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3fv = (func_glVertex3fv_t) GetProcAddress (hOriginalDll, "glVertex3fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3fv()");
+		add_log ("Couldn't find a prototype for glVertex3fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3i = (func_glVertex3i_t) GetProcAddress (hOriginalDll, "glVertex3i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3i()");
+		add_log ("Couldn't find a prototype for glVertex3i()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3iv = (func_glVertex3iv_t) GetProcAddress (hOriginalDll, "glVertex3iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3iv()");
+		add_log ("Couldn't find a prototype for glVertex3iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3s = (func_glVertex3s_t) GetProcAddress (hOriginalDll, "glVertex3s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3s()");
+		add_log ("Couldn't find a prototype for glVertex3s()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex3sv = (func_glVertex3sv_t) GetProcAddress (hOriginalDll, "glVertex3sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex3sv()");
+		add_log ("Couldn't find a prototype for glVertex3sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4d = (func_glVertex4d_t) GetProcAddress (hOriginalDll, "glVertex4d")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4d()");
+		add_log ("Couldn't find a prototype for glVertex4d()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4dv = (func_glVertex4dv_t) GetProcAddress (hOriginalDll, "glVertex4dv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4dv()");
+		add_log ("Couldn't find a prototype for glVertex4dv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4f = (func_glVertex4f_t) GetProcAddress (hOriginalDll, "glVertex4f")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4f()");
+		add_log ("Couldn't find a prototype for glVertex4f()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4fv = (func_glVertex4fv_t) GetProcAddress (hOriginalDll, "glVertex4fv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4fv()");
+		add_log ("Couldn't find a prototype for glVertex4fv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4i = (func_glVertex4i_t) GetProcAddress (hOriginalDll, "glVertex4i")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4i()");
+		add_log ("Couldn't find a prototype for glVertex4i()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4iv = (func_glVertex4iv_t) GetProcAddress (hOriginalDll, "glVertex4iv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4iv()");
+		add_log ("Couldn't find a prototype for glVertex4iv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4s = (func_glVertex4s_t) GetProcAddress (hOriginalDll, "glVertex4s")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4s()");
+		add_log ("Couldn't find a prototype for glVertex4s()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertex4sv = (func_glVertex4sv_t) GetProcAddress (hOriginalDll, "glVertex4sv")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertex4sv()");
+		add_log ("Couldn't find a prototype for glVertex4sv()");
 		return FALSE;
 	}
 
 	if ( (orig_glVertexPointer = (func_glVertexPointer_t) GetProcAddress (hOriginalDll, "glVertexPointer")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glVertexPointer()");
+		add_log ("Couldn't find a prototype for glVertexPointer()");
 		return FALSE;
 	}
 
 	if ( (orig_glViewport = (func_glViewport_t) GetProcAddress (hOriginalDll, "glViewport")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for glViewport()");
+		add_log ("Couldn't find a prototype for glViewport()");
 		return FALSE;
 	}
 
 	if ( (orig_wglChoosePixelFormat = (func_wglChoosePixelFormat_t) GetProcAddress (hOriginalDll, "wglChoosePixelFormat")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglChoosePixelFormat()");
+		add_log ("Couldn't find a prototype for wglChoosePixelFormat()");
 		return FALSE;
 	}
 
 	if ( (orig_wglCopyContext = (func_wglCopyContext_t) GetProcAddress (hOriginalDll, "wglCopyContext")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglCopyContext()");
+		add_log ("Couldn't find a prototype for wglCopyContext()");
 		return FALSE;
 	}
 
 	if ( (orig_wglCreateContext = (func_wglCreateContext_t) GetProcAddress (hOriginalDll, "wglCreateContext")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglCreateContext()");
+		add_log ("Couldn't find a prototype for wglCreateContext()");
 		return FALSE;
 	}
 
 	if ( (orig_wglCreateLayerContext = (func_wglCreateLayerContext_t) GetProcAddress (hOriginalDll, "wglCreateLayerContext")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglCreateLayerContext()");
+		add_log ("Couldn't find a prototype for wglCreateLayerContext()");
 		return FALSE;
 	}
 
 	if ( (orig_wglDeleteContext = (func_wglDeleteContext_t) GetProcAddress (hOriginalDll, "wglDeleteContext")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglDeleteContext()");
+		add_log ("Couldn't find a prototype for wglDeleteContext()");
 		return FALSE;
 	}
 
 	if ( (orig_wglDescribeLayerPlane = (func_wglDescribeLayerPlane_t) GetProcAddress (hOriginalDll, "wglDescribeLayerPlane")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglDescribeLayerPlane()");
+		add_log ("Couldn't find a prototype for wglDescribeLayerPlane()");
 		return FALSE;
 	}
 
 	if ( (orig_wglDescribePixelFormat = (func_wglDescribePixelFormat_t) GetProcAddress (hOriginalDll, "wglDescribePixelFormat")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglDescribePixelFormat()");
+		add_log ("Couldn't find a prototype for wglDescribePixelFormat()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetCurrentContext = (func_wglGetCurrentContext_t) GetProcAddress (hOriginalDll, "wglGetCurrentContext")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetCurrentContext()");
+		add_log ("Couldn't find a prototype for wglGetCurrentContext()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetCurrentDC = (func_wglGetCurrentDC_t) GetProcAddress (hOriginalDll, "wglGetCurrentDC")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetCurrentDC()");
+		add_log ("Couldn't find a prototype for wglGetCurrentDC()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetDefaultProcAddress = (func_wglGetDefaultProcAddress_t) GetProcAddress (hOriginalDll, "wglGetDefaultProcAddress")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetDefaultProcAddress()");
+		add_log ("Couldn't find a prototype for wglGetDefaultProcAddress()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetLayerPaletteEntries = (func_wglGetLayerPaletteEntries_t) GetProcAddress (hOriginalDll, "wglGetLayerPaletteEntries")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetLayerPaletteEntries()");
+		add_log ("Couldn't find a prototype for wglGetLayerPaletteEntries()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetPixelFormat = (func_wglGetPixelFormat_t) GetProcAddress (hOriginalDll, "wglGetPixelFormat")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetPixelFormat()");
+		add_log ("Couldn't find a prototype for wglGetPixelFormat()");
 		return FALSE;
 	}
 
 	if ( (orig_wglGetProcAddress = (func_wglGetProcAddress_t) GetProcAddress (hOriginalDll, "wglGetProcAddress")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglGetProcAddress()");
+		add_log ("Couldn't find a prototype for wglGetProcAddress()");
 		return FALSE;
 	}
 
 	if ( (orig_wglMakeCurrent = (func_wglMakeCurrent_t) GetProcAddress (hOriginalDll, "wglMakeCurrent")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglMakeCurrent()");
+		add_log ("Couldn't find a prototype for wglMakeCurrent()");
 		return FALSE;
 	}
 
 	if ( (orig_wglRealizeLayerPalette = (func_wglRealizeLayerPalette_t) GetProcAddress (hOriginalDll, "wglRealizeLayerPalette")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglRealizeLayerPalette()");
+		add_log ("Couldn't find a prototype for wglRealizeLayerPalette()");
 		return FALSE;
 	}
 
 	if ( (orig_wglSetLayerPaletteEntries = (func_wglSetLayerPaletteEntries_t) GetProcAddress (hOriginalDll, "wglSetLayerPaletteEntries")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglSetLayerPaletteEntries()");
+		add_log ("Couldn't find a prototype for wglSetLayerPaletteEntries()");
 		return FALSE;
 	}
 
 	if ( (orig_wglSetPixelFormat = (func_wglSetPixelFormat_t) GetProcAddress (hOriginalDll, "wglSetPixelFormat")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglSetPixelFormat()");
+		add_log ("Couldn't find a prototype for wglSetPixelFormat()");
 		return FALSE;
 	}
 
 	if ( (orig_wglShareLists = (func_wglShareLists_t) GetProcAddress (hOriginalDll, "wglShareLists")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglShareLists()");
+		add_log ("Couldn't find a prototype for wglShareLists()");
 		return FALSE;
 	}
 
 	if ( (orig_wglSwapBuffers = (func_wglSwapBuffers_t) GetProcAddress (hOriginalDll, "wglSwapBuffers")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglSwapBuffers()");
+		add_log ("Couldn't find a prototype for wglSwapBuffers()");
 		return FALSE;
 	}
 
 	if ( (orig_wglSwapLayerBuffers = (func_wglSwapLayerBuffers_t) GetProcAddress (hOriginalDll, "wglSwapLayerBuffers")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglSwapLayerBuffers()");
+		add_log ("Couldn't find a prototype for wglSwapLayerBuffers()");
 		return FALSE;
 	}
 
 	if ( (orig_wglUseFontBitmapsA = (func_wglUseFontBitmapsA_t) GetProcAddress (hOriginalDll, "wglUseFontBitmapsA")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglUseFontBitmapsA()");
+		add_log ("Couldn't find a prototype for wglUseFontBitmapsA()");
 		return FALSE;
 	}
 
 	if ( (orig_wglUseFontBitmapsW = (func_wglUseFontBitmapsW_t) GetProcAddress (hOriginalDll, "wglUseFontBitmapsW")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglUseFontBitmapsW()");
+		add_log ("Couldn't find a prototype for wglUseFontBitmapsW()");
 		return FALSE;
 	}
 
 	if ( (orig_wglUseFontOutlinesA = (func_wglUseFontOutlinesA_t) GetProcAddress (hOriginalDll, "wglUseFontOutlinesA")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglUseFontOutlinesA()");
+		add_log ("Couldn't find a prototype for wglUseFontOutlinesA()");
 		return FALSE;
 	}
 
 	if ( (orig_wglUseFontOutlinesW = (func_wglUseFontOutlinesW_t) GetProcAddress (hOriginalDll, "wglUseFontOutlinesW")) == NULL )
 	{
-		add_log ("Couldn't found a prototype for wglUseFontOutlinesW()");
+		add_log ("Couldn't find a prototype for wglUseFontOutlinesW()");
 		return FALSE;
 	}
+
+	
+
+	// Setting up the Nvidia Profile
+	add_log("Setting up the Nvidia Profile Information\n");
+	NvApi_3DVisionProfileSetup();
+
     return TRUE;
 }
 
@@ -4434,56 +4468,14 @@ void sys_glEnd(void)
 
 void sys_glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-	// TO DO: Enable Legacy Mode here as well
 	(*orig_glFrustum) (left, right, bottom, top, zNear, zFar);
 }
 
+// We are already correcting the Orthographic projection when the matrix is loaded
 void sys_glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-	// If we are in Legacy OpenGL Calls
-	if (g_reader->isLegacyOpenGLEnabled())
-	{
-		if (!NV3DVisionIsNotInit())
-		{
-			// If the Previous Mode was in GL_Projection
-			// We need to get the current Projection Matrix and correct it for stereo
-			// We need to do this only after we finished with the Projection Matrix so we are in another mode.   
-			if (m_previousMatrixMode == GL_PROJECTION)
-			{
-				GLfloat currentSeparation = Get3DEyeSeparation();
-				GLfloat currentConvergence = Get3DConvergence();
-				GLfloat mCurrentProj[16] = { 0 };
-
-				// Get the current Projection matrix
-				glGetFloatv(GL_PROJECTION_MATRIX, mCurrentProj);
-
-				// Left Eye
-				if (NV3DVisionGetCurrentFrame() == 1)
-				{
-					// Remove the stereo correction for Current Eye as we are in Ortho Projection
-					mCurrentProj[8] -= currentSeparation;
-					mCurrentProj[12] -= currentSeparation * currentConvergence;
-				}
-				// Right Eye
-				else if (NV3DVisionGetCurrentFrame() == 2)
-				{
-					// Remove the stereo correction for Current Eye as we are in Ortho Projection
-					mCurrentProj[8] += currentSeparation;
-					mCurrentProj[12] += currentSeparation * currentConvergence;
-				}
-
-				// Load it back
-				glLoadMatrixf(mCurrentProj);
-			}
-		}
-		// And Run the original code
-		(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
-	}
-	else
-	{
-		// Normal mode
-		(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
-	}
+	// Normal mode
+	(*orig_glOrtho) (left, right, bottom, top, zNear, zFar);
 }
 
 void sys_glPopMatrix(void)

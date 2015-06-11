@@ -12,10 +12,15 @@ static std::string GetPath()
 
 configReader::configReader()
 {
+	ReadConfigFile();
+}
+// -----------------------------------------------------------------------------------
+
+void configReader::ReadConfigFile()
+{
 	m_enableLog = false;
 	m_enableShaderDump = false;
 	m_enableVertexStereoInjection = false;
-	m_ScreenBufferCallTracer = false;
 
 #ifdef DEBUG_WRAPPER
 	std::string configFileName = GetPath() + "/3DVisionWrapperDBG.ini";
@@ -76,18 +81,6 @@ configReader::configReader()
 					}
 				}
 #endif
-				while (configLine.find("EnableScrBfrCallTracer") == std::string::npos)
-				{
-					getline(configFile, configLine);
-					if (configLine.find("true") != std::string::npos)
-					{
-						m_ScreenBufferCallTracer = true;
-					}
-					else if (configLine.find("false") != std::string::npos)
-					{
-						m_ScreenBufferCallTracer = false;
-					}
-				}
 			}
 			//----------------------------------------------
 
@@ -95,10 +88,9 @@ configReader::configReader()
 			size_t foundLocation;
 			if (configLine.find("[3D_Vision_Global_Settings]") != std::string::npos)
 			{
-				//get the next line
-				getline(configFile, configLine);
-				while ((foundLocation = configLine.find("Enable3DVision")) != std::string::npos)
+				while ((foundLocation = configLine.find("Enable3DVision")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					if (configLine.find("true") != std::string::npos)
 					{
 						m_3dVisionEnabled = true;
@@ -107,10 +99,23 @@ configReader::configReader()
 					{
 						m_3dVisionEnabled = false;
 					}
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("EnableWindowModeSupport")) != std::string::npos)
+
+				while ((foundLocation = configLine.find("ForceFullScreen")) == std::string::npos)
 				{
+					getline(configFile, configLine);
+					if (configLine.find("true") != std::string::npos)
+					{
+						m_forceFullScreen = TRUE;
+					}
+					else if (configLine.find("false") != std::string::npos)
+					{
+						m_forceFullScreen = FALSE;
+					}
+				}
+				while ((foundLocation = configLine.find("ForceWindowModeSupport")) == std::string::npos)
+				{
+					getline(configFile, configLine);
 					if (configLine.find("true") != std::string::npos)
 					{
 						m_windowModeEnabled = TRUE;
@@ -119,32 +124,31 @@ configReader::configReader()
 					{
 						m_windowModeEnabled = FALSE;
 					}
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("EnableWindowResizeSupport")) != std::string::npos)
+				while ((foundLocation = configLine.find("FullScreenDetection")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					if (configLine.find("true") != std::string::npos)
 					{
-						m_windowResizeEnabled = TRUE;
+						m_fullscreenDetection = TRUE;
 					}
 					else if (configLine.find("false") != std::string::npos)
 					{
-						m_windowResizeEnabled = FALSE;
+						m_fullscreenDetection = FALSE;
 					}
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("DepthMultiplicationFactor")) != std::string::npos)
+				while ((foundLocation = configLine.find("DepthMultiplicationFactor")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					size_t position = configLine.find("= ");
 					std::string value = configLine.substr(position + 1);
 
 					// Read the depth hack
 					m_depthFactor = std::stof(value, 0);
-
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("DefaultConvergence")) != std::string::npos)
+				while ((foundLocation = configLine.find("DefaultConvergence")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					size_t position = configLine.find("= ");
 					std::string value = configLine.substr(position + 1);
 
@@ -152,11 +156,10 @@ configReader::configReader()
 					std::stringstream ss;
 					ss << std::hex << value;
 					ss >> m_defaultConvergence;
-
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("ForceNVProfileLoad")) != std::string::npos)
+				while ((foundLocation = configLine.find("ForceNVProfileLoad")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					if (configLine.find("true") != std::string::npos)
 					{
 						m_forceNvProfileLoad = TRUE;
@@ -165,50 +168,25 @@ configReader::configReader()
 					{
 						m_forceNvProfileLoad = FALSE;
 					}
-					getline(configFile, configLine);
 				}
-				while ((foundLocation = configLine.find("AutomaticHookPoint")) != std::string::npos)
+				while ((foundLocation = configLine.find("3DVisionRating")) == std::string::npos)
 				{
-					if (configLine.find("true") != std::string::npos)
-					{
-						m_automaticInjectionPoint = true;
-					}
-					else if (configLine.find("false") != std::string::npos)
-					{
-						m_automaticInjectionPoint = false;
-					}
 					getline(configFile, configLine);
+					size_t position = configLine.find("= ");
+					std::string value = configLine.substr(position + 1);
+
+					// Read the value
+					m_3DVisionRating = std::stof(value, 0);
 				}
 			}
 
-			if (configLine.find("[Manual_Hook_Point_Options]") != std::string::npos)
+			if (configLine.find("[Render_Control_Options]") != std::string::npos)
 			{
-				//get the next line
-				getline(configFile, configLine);
-				while ((foundLocation = configLine.find("HookPoint")) != std::string::npos)
+				bool found = false;
+				while ((foundLocation = configLine.find("RenderMode")) == std::string::npos)
 				{
-					bool found = false;
-					if (configLine.find("\"glBindFramebufferEXT\"") != std::string::npos)
-					{
-						m_injectionPoint = "glBindFramebufferEXT";
-						found = true;
-					}
-					else if (configLine.find("\"glBindFramebufferARB\"") != std::string::npos)
-					{
-						m_injectionPoint = "glBindFramebufferARB";
-						found = true;
-					}
-					else if (configLine.find("\"glBindFramebuffer\"") != std::string::npos)
-					{
-						m_injectionPoint = "glBindFramebuffer";
-						found = true;
-					}
-					else if (configLine.find("\"glSwapBuffers\"") != std::string::npos)
-					{
-						m_injectionPoint = "glSwapBuffers";
-						found = true;
-					}
-					else if (configLine.find("\"SCREEN_BUFFER\"") != std::string::npos)
+					getline(configFile, configLine);
+					if (configLine.find("\"SCREEN_BUFFER\"") != std::string::npos)
 					{
 						m_injectionPoint = "SCREEN_BUFFER";
 						found = true;
@@ -218,26 +196,24 @@ configReader::configReader()
 						m_injectionPoint = "NONE";
 						found = true;
 					}
-					else
+					else if (configLine.find("RenderMode") != std::string::npos)
 					{
 						// If we are printing the information is doesnt matter
 						if (Get3DVisionEnabledStatus() == true)
 						{
-							MessageBox(NULL, "Unknown Injection Point. Use:\n glBindFramebuffer\n glBindFramebufferARB\n glBindFramebufferEXT\n glSwapBuffers\n SCREEN_BUFFER\n\nNONE", "ASSERT", MB_OK);
+							MessageBox(NULL, "Unknown Injection Point. Use:\n SCREEN_BUFFER\n\nNONE", "ASSERT", MB_OK);
 							exit(EXIT_FAILURE);
 						}
 					}
-					getline(configFile, configLine);
 				}
 			}
 
 			// [Legacy_OpenGL_Calls]
 			if (configLine.find("[Legacy_OpenGL_Calls]") != std::string::npos)
 			{
-				//get the next line
-				getline(configFile, configLine);
-				if ((foundLocation = configLine.find("LegacyMode")) != std::string::npos)
+				while ((foundLocation = configLine.find("LegacyMode")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					if (configLine.find("false") != std::string::npos)
 					{
 						m_legacyOpenGL = false;
@@ -247,15 +223,24 @@ configReader::configReader()
 						m_legacyOpenGL = true;
 					}
 				}
+
+				while ((foundLocation = configLine.find("LegacyHUDSeparation")) == std::string::npos)
+				{
+					getline(configFile, configLine);
+					size_t position = configLine.find("= ");
+					std::string value = configLine.substr(position + 1);
+
+					// Read the value
+					m_legacyHUDSeparation = std::stof(value, 0);
+				}
 			}
 
 			//[Alternative_3D_Settings]
 			if (configLine.find("[Alternative_3D_Settings]") != std::string::npos)
 			{
-				//get the next line
-				getline(configFile, configLine);
-				if ((foundLocation = configLine.find("EnableToggleMode")) != std::string::npos)
+				while ((foundLocation = configLine.find("EnableToggleMode")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					if (configLine.find("false") != std::string::npos)
 					{
 						m_enableToggleMode = false;
@@ -265,28 +250,29 @@ configReader::configReader()
 						m_enableToggleMode = true;
 					}
 				}
-				getline(configFile, configLine);
-				if ((foundLocation = configLine.find("AltConvergenceKey")) != std::string::npos)
+				
+				while ((foundLocation = configLine.find("AltConvergenceKey")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					size_t position = configLine.find("= ");
 					std::string value = configLine.substr(position + 1);
 
 					// Read the key
 					m_altKey = std::stoul(value, nullptr, 16);
 				}
-				getline(configFile, configLine);
-				if ((foundLocation = configLine.find("ConvergenceValue")) != std::string::npos)
+				
+				while ((foundLocation = configLine.find("ConvergenceValue")) == std::string::npos)
 				{
+					getline(configFile, configLine);
 					size_t position = configLine.find("= ");
 					std::string value = configLine.substr(position + 1);
 
 					// Read the convergence
 					m_altConvergence = std::stof(value, 0);
 				}
-
 			}
-
 		}
 		configFile.close();
 	}
 }
+// -----------------------------------------------------------------------------------

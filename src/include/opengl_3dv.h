@@ -1,5 +1,5 @@
 /*
-* OpenGL - 3D Vision Wrapper V.1.5
+* OpenGL - 3D Vision Wrapper
 * Copyright (c) Helifax 2015
 */
 
@@ -10,7 +10,6 @@
 #include "wgl_custom.h"
 #include "windows.h"
 #include <GL/GL.h>
-
 
 typedef struct struct_GLD3DBuffers
 {
@@ -35,35 +34,36 @@ typedef struct struct_GLD3DBuffers
 	void *nvStereo;
 } GLD3DBuffers;
 
-// NvApi Profiles
-void NvApi_3DVisionProfileSetup();
 
-void GLD3DBuffers_create(GLD3DBuffers *gl_d3d_buffers, void *window_handle, bool stereo);
-void GLD3DBuffers_destroy(GLD3DBuffers *gl_d3d_buffers);
+BOOL NV3DVisionBuffers_create(GLD3DBuffers *gl_d3d_buffers, void *window_handle, bool stereo);
+void NV3DVisionBuffers_destroy(GLD3DBuffers *gl_d3d_buffers);
 
-void GLD3DBuffers_activate_left(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_flip_left(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_flip_right(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_activate_left(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_flip_left(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_flip_right(GLD3DBuffers *gl_d3d_buffers);
 
-void GLD3DBuffers_activate_right(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_deactivate(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_flush(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_activate_right(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_deactivate(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_flush(GLD3DBuffers *gl_d3d_buffers);
 
 // Version 1.5 Wrapper with Automatic Hooking
-void GLD3DBuffers_copy_left(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_copy_right(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_activate_depth(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_activate_right(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_deactivate_left(GLD3DBuffers *gl_d3d_buffers);
-void GLD3DBuffers_deactivate_right(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_copy_left(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_copy_right(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_activate_depth(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_deactivate_depth(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_activate_right(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_deactivate_left(GLD3DBuffers *gl_d3d_buffers);
+void NV3DVisionBuffers_deactivate_right(GLD3DBuffers *gl_d3d_buffers);
 
 /// 3D Vision Initialisation
+void NV3DVisionReInitBuffers(void);
 bool NV3DVisionIsNotInit();
-void NV3DVisionSetInit(void);
 void NV3DVisionSetCurrentFrame(unsigned int frameNumber);
 unsigned int NV3DVisionGetCurrentFrame(void);
 
 //// NVAPI 3D Vision Values
+void StartNVAPIThread(void);
+void StoptNVAPIThread(void);
 void Set3DSeparation(float value);
 void Set3DConvergence(float value);
 void Set3DEyeSeparation(float value);
@@ -76,6 +76,7 @@ float Get3DEyeSeparation();
 void SetInterop(bool state);
 BOOL GetInterop(void);
 
-
+// Versioning
+void OGL3DVisionWrapperGetVersion(char *pVersionStr);
 
 #endif

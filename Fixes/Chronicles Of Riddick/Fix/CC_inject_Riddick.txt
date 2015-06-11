@@ -1,0 +1,41 @@
+alloc(newmem,2048)
+label(returnhere)
+label(originalcode)
+label(exit)
+label(frame1)
+label(frame2)
+
+newmem: //this is allocated memory, you have read,write,execute access
+//place your code here
+
+originalcode:
+push eax
+mov eax, [00186234]
+cmp eax, 0x02
+jne frame2
+je frame1
+
+frame2:
+pop eax
+add [00186234], 0x01
+jmp RndrGL.DLL+40033
+
+frame1:
+pop eax
+mov [00186234], 0x01
+push 10
+call dword ptr [RndrGL.DLL+B218C]
+jmp RndrGL.DLL+40033
+jmp exit
+
+exit:
+jmp returnhere
+
+"RndrGL.DLL"+40029:
+jmp newmem
+nop
+nop
+nop
+nop
+nop
+returnhere:

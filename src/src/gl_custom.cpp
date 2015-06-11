@@ -10,6 +10,8 @@
 #pragma warning(disable: 4054)
 #endif
 
+extern void __cdecl add_log(const char * fmt, ...);
+
 static int TestPointer(const PROC pTest)
 {
 	ptrdiff_t iTest;
@@ -453,6 +455,7 @@ void (CODEGEN_FUNCPTR *_ptrc_glGetPixelMapuiv)(GLenum, GLuint *) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glGetPixelMapusv)(GLenum, GLushort *) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glGetPolygonStipple)(GLubyte *) = NULL;
 const GLubyte * (CODEGEN_FUNCPTR *_ptrc_glGetString)(GLenum) = NULL;
+const GLubyte * (CODEGEN_FUNCPTR * _ptrc_glGetStringi) (GLenum, GLuint) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glGetTexEnvfv)(GLenum, GLenum, GLfloat *) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glGetTexEnviv)(GLenum, GLenum, GLint *) = NULL;
 void (CODEGEN_FUNCPTR *_ptrc_glGetTexGendv)(GLenum, GLenum, GLdouble *) = NULL;
@@ -2086,6 +2089,10 @@ static void LoadExtByName(const char *extensionName)
 
 static void ProcExtsFromExtString(const char *strExtList)
 {
+	if (strExtList == 0)
+	{
+		add_log("Extension Pointer is ZER0... Abort");
+	}
 	size_t iExtListLen = strlen(strExtList);
 	const char *strExtListEnd = strExtList + iExtListLen;
 	const char *strCurrPos = strExtList;
@@ -2117,18 +2124,53 @@ static void ProcExtsFromExtString(const char *strExtList)
 		if(iStop) break;
 	}
 }
-
 int ogl_LoadFunctions()
 {
 	int numFailed = 0;
 	ClearExtensionVars();
-	_ptrc_glGetString = (const GLubyte * (CODEGEN_FUNCPTR *)(GLenum))IntGetProcAddress("glGetString");
-	if (!_ptrc_glGetString)
+	add_log("Loading OpenGL Extensions....");
+	
+	// Attempt to get GL Extensions
+	// This will query the OpenGL layer supplied by the driver manufacturer
+	// Is valid for OpenGL 3.3 or later (Core Profiles)
+	_ptrc_glGetStringi = (const GLubyte * (CODEGEN_FUNCPTR *)(GLenum, GLuint))IntGetProcAddress("glGetStringi");
+	_ptrc_glGetIntegerv = (void (CODEGEN_FUNCPTR *)(GLenum, GLint *))IntGetProcAddress("glGetIntegerv");
+				
+	// Can we get the extensions this way ?
+	if (!_ptrc_glGetStringi && !_ptrc_glGetIntegerv)
 	{
-		return ogl_LOAD_FAILED;
+		add_log("Failed to get glGetStringi");
+
+		// Attempt to get the extensions the "Legacy/Old" way
+		// Get standard GL Extensions
+		// Pre GL CORE 3.0 version
+		_ptrc_glGetString = (const GLubyte * (CODEGEN_FUNCPTR *)(GLenum))IntGetProcAddress("glGetString");
+		if (!_ptrc_glGetString)
+		{
+			add_log("Could not load GL extensions... We have to abort now... Have a nice day ^_^\n\n\n");
+			return ogl_LOAD_FAILED;
+		}
+		// Get the extensions
+		else
+		{
+			ProcExtsFromExtString((const char *)_ptrc_glGetString(GL_EXTENSIONS));
+			add_log("Extensions enumerated and retrieved ! (Pre-OGL 3.3)");
+		}
+	}
+	// Get the extensions
+	else
+	{
+		GLint nExternsions = 0;
+		_ptrc_glGetIntegerv(GL_NUM_EXTENSIONS, &nExternsions);
+		add_log("Found max of %d extensions", nExternsions);
+
+		for (GLint i = 0; i < nExternsions; i++)
+		{
+			ProcExtsFromExtString((const char *)_ptrc_glGetStringi(GL_EXTENSIONS, i));
+		}
+		add_log("Extensions enumerated and retrieved ! (OGL 3.3 or later)");
 	}
 	
-	ProcExtsFromExtString((const char *)_ptrc_glGetString(GL_EXTENSIONS));
 	numFailed = Load_Version_2_0();
 	
 	if(numFailed == 0)

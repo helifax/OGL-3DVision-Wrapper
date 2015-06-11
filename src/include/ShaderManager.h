@@ -1,5 +1,5 @@
 /*
-* OpenGL - 3D Vision Wrapper V.1.5
+* OpenGL - 3D Vision Wrapper
 * Copyright (c) Helifax 2015
 */
 
@@ -11,32 +11,33 @@
 #include <stdlib.h> 
 #include <gl_custom.h>
 
-typedef struct ShaderInfo
-{
-	std::vector <GLuint> _shaderID;
-	std::vector <GLenum> _shaderType;
-}SHADER_INFO_T;
-
-// Structure to keep track of unique vertex+pixel shader pairs
+// Stucture that will hold the existing shaders + program that they are attached to
 typedef struct
 {
 	GLuint m_programId;
-	GLuint m_pixelShader;
-	GLuint m_vertexShader;
-	std::string m_vertexSource;
-	std::string m_fragmentSource;
-} EXISTING_SHADERS_T;
+	GLuint m_shaderId;
+	DWORD m_CRC32;
+	GLuint m_shaderType;
+	std::string m_shaderSourceCode;
+} EXISTING_SHADER_T;
 
-
+// Stucture that will hold the custom shaders
 typedef struct
 {
-	GLuint m_programId;
-	GLuint m_pixelShader;
-	GLuint m_vertexShader;
-	std::string m_vertexSource;
-	std::string m_fragmentSource;
 	bool m_isApplied;
-} SHADER_EXCEPT_T;
+	DWORD m_CRC32;
+	GLuint m_shaderType;
+	std::string m_shaderSourceCode;
+} CUSTOM_SHADER_T;
+
+typedef struct  
+{
+	GLuint m_programId;
+	float x;
+	float y;
+	float z;
+	float w;
+}CUSTOM_SHADER_VALUES_T;
 
 class ShaderManager
 {
@@ -53,15 +54,17 @@ public:
 	//default dtor nothing to do 
 	~ShaderManager() { ; }
 
+	void ReadConfigFile(void);
+
+	void LoadCustomShaders(void);
+
 	std::string getShaderSource(GLuint shaderId);
 
 	bool isShaderType(GLuint _shaderID, GLenum _shaderType);
 
 	std::string injectStereoScopy(std::string _inputSource, GLuint programId);
 
-	std::string injectFragmentModification(std::string _inputSource);
-
-	std::string flipPositionInShader(std::string _inputSource);
+	std::string injectFragmentModification(std::string _inputSource, GLuint programId);
 
 	void applyShaderSource(GLuint _shaderID, std::string _shaderSource, const GLint *length);
 
@@ -69,7 +72,13 @@ public:
 	bool GetShadersAppliedStatus(GLuint _vertexId, GLuint _fragmentId);
 
 	// Set the shader pair as applied
-	bool ApplyExceptionShaders(void);
+	bool ApplyExceptionShaders(std::string &newShaderSource, GLenum shaderType, DWORD CRC32);
+
+	// Apply custom separation + convergence
+	void ApplyCustomShaderParams(GLuint progId);
+
+	// Get the stored Shader Source from program and type
+	std::string GetShaderSourceCode(GLuint programId, GLuint startIndex, GLenum shaderType);
 
 	//ShaderInjection toggle
 	inline void SetVertexInjectionState(bool state)
@@ -142,13 +151,13 @@ public:
 	}
 
 	//Exisint shaders + source at creation
-	inline void addExistingShaderInfo(EXISTING_SHADERS_T _shaders)
+	inline void addExistingShaderInfo(EXISTING_SHADER_T _shaders)
 	{
 		m_existingShaders.push_back(_shaders);
 	}
 
 #ifdef DEBUG_WRAPPER
-	inline std::vector<EXISTING_SHADERS_T> GetExistingShaders(void)
+	inline std::vector<EXISTING_SHADER_T> GetExistingShaders(void)
 	{
 		return m_existingShaders;
 	}
@@ -158,27 +167,45 @@ public:
 
 	// The program Id is found in the existing shader list??
 	// Returns -1 if not found or the index position
-	int ShaderProgramFound(int progId);
-
-	// Save the source of the current compiled and modified shader
-	void SaveNewSource(int progId, std::string ShaderSource, bool isVertex);
+	int ShaderProgramFound(int progId, GLuint shaderType);
 
 	// get the start exception shader
-	inline int GetExceptionShaderVertexStart()
+	inline int GetExceptionShaderStart()
 	{
-		return m_shaderVStart;
+		return m_shaderStart;
 	}
 
 	// get the end exception shader
-	inline int GetExceptionShaderVertexEnd()
+	inline int GetExceptionShaderEnd()
 	{
-		return m_shaderVEnd;
+		return m_shaderEnd;
 	}
 
 	// Are vertex shaders exceptions enabled ???
 	inline bool VertexShadersExceptionsEnabled()
 	{
 		return m_exceptShadersEnabled;
+	}
+
+	// Do we try to disable the current vertex shader ?
+	inline bool VertexShaderExceptionsDisableShader()
+	{
+		return m_disableExceptShaders;
+	}
+
+	inline bool DisableCurrentShader()
+	{
+		return m_disableCurrentShader;
+	}
+
+	inline std::string GetVertexDisableString()
+	{
+		return m_vertexDisableString;
+	}
+
+	inline std::string GetPixelDisableString()
+	{
+		return m_pixelDisableString;
 	}
 
 #endif
@@ -189,16 +216,8 @@ private:
 	static ShaderManager * instance;
 	ShaderManager(const ShaderManager&);
 	ShaderManager& operator= (const ShaderManager&);
-	//Current shaderID
-	GLuint m_shaderID;
-	// Original Shader Source
-	std::string m_origSource;
-	// New Shader Source
-	std::string m_newSource;
-	//our shader lookup table
-	SHADER_INFO_T m_shaderInfo;
 	// our shader list containing the vertex + fragment pair and new shader source
-	std::vector<SHADER_EXCEPT_T> m_exceptShaders;
+	std::vector<CUSTOM_SHADER_T> m_exceptShaders;
 
 	bool m_enableStereoVertexInjection;
 	bool m_enableStereoFailureInfo;
@@ -218,17 +237,24 @@ private:
 #ifdef DEBUG_WRAPPER
 	// Shader Exceptions. Debug Only
 	bool m_exceptShadersEnabled;
-	int m_shaderVStart;
-	int m_shaderVEnd;
+	bool m_disableExceptShaders;
+	bool m_disableCurrentShader;
+	int m_shaderStart;
+	int m_shaderEnd;
+
+	std::string  m_vertexDisableString;
+	std::string  m_pixelDisableString;
+
 #endif
-std::vector<EXISTING_SHADERS_T> m_existingShaders;
+std::vector<EXISTING_SHADER_T> m_existingShaders;
+std::vector<CUSTOM_SHADER_VALUES_T> m_customShaderValues;
 };
 
 // Public Functions
-void CheckCompileState(GLuint newVertexId);
+void CheckCompileState(GLuint newShaderId);
 void CheckLinkState(GLuint programId);
 void DeleteAndDetachShaders(GLuint progId, GLuint shaderId);
-void ExportShader(std::string _shaderType, GLuint _program, GLuint _shaderNumber, std::string _shaderSource);
+void ExportShader(std::string _shaderType, GLuint _program, DWORD crc32, std::string _shaderSource);
 void ExportCompiledShader(std::string _shaderSource);
 
 

@@ -23,6 +23,8 @@ extern "C" {
 
 #define NVAPI_STEREO_CONVERGENCE_ID				0x708DB8C5
 #define NVAPI_STEREO_WINDOWED_3D_SUPPORT_ID		0x701EB457
+#define NVAPI_STEREO_COMMENTS					0x704D456E
+#define NVAPI_STEREO_RATING						0x7051E5F5
 
 static char m_exeName[255] = "";
 static char m_profileName[255] = "";
@@ -65,7 +67,7 @@ static void PrintError(NvAPI_Status status)
 ///--------------------------------------------------------------------------------------
 
 // Enumerate profiles and find the current profile for the .exe
-void NvApi_3DVisionProfileSetup()
+void NvApi_3DVisionProfileSetup(void)
 {
 	NvAPI_Status status;
 	bool profileFound = false;
@@ -93,6 +95,7 @@ void NvApi_3DVisionProfileSetup()
 	
 	// Get the current Application Name
 	_getApplicationName(m_exeName);
+	add_log("Nvidia Profile exe name: %s", m_exeName);
 	
 	while ((status = NvAPI_DRS_EnumProfiles(hSession, index, &hProfile)) == NVAPI_OK) 
 	{
@@ -215,6 +218,7 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 	status = NvAPI_DRS_GetProfileInfo(hSession, hProfile, &profileInformation);
 	if (status != NVAPI_OK)
 	{
+		add_log("Cannot retrieve Profile information...");
 		PrintError(status);
 		return false;
 	}
@@ -318,6 +322,29 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 			setNewSettings.u32CurrentValue = g_reader->GetDefaultConvergence();
 			status = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
 
+			// Set the default rating
+			setNewSettings.version = NVDRS_SETTING_VER;
+			setNewSettings.settingId = NVAPI_STEREO_RATING;
+			setNewSettings.settingType = NVDRS_WSTRING_TYPE;
+			setNewSettings.isCurrentPredefined = 1;
+			setNewSettings.isPredefinedValid = 1;
+			float rating = g_reader->Get3DVisionRating();
+			char rate[50];
+			sprintf_s(rate, "%.1f", rating);
+			NvApi_SetUnicodeString(setNewSettings.wszCurrentValue, rate);
+			NvApi_SetUnicodeString(setNewSettings.wszPredefinedValue, rate);
+			status = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
+
+			// Set the default convergence
+			setNewSettings.version = NVDRS_SETTING_VER;
+			setNewSettings.settingId = NVAPI_STEREO_COMMENTS;
+			setNewSettings.settingType = NVDRS_WSTRING_TYPE;
+			setNewSettings.isCurrentPredefined = 1;
+			setNewSettings.isPredefinedValid = 1;
+			NvApi_SetUnicodeString(setNewSettings.wszCurrentValue, "OpenGL - 3D Vision Wrapper Rated");
+			NvApi_SetUnicodeString(setNewSettings.wszPredefinedValue, "OpenGL - 3D Vision Wrapper Rated");
+			status = NvAPI_DRS_SetSetting(hSession, hProfile, &setNewSettings);
+
 			if (status == NVAPI_OK)
 			{
 				// Save settings to the driver
@@ -337,6 +364,7 @@ static bool NvApi_Enable3DVisionSetting(NvDRSSessionHandle hSession, NvDRSProfil
 
 		return fixed;
 	}
+	add_log("Settings not found for the current profile...");
 	return false;
 }
 ///--------------------------------------------------------------------------------------
@@ -398,7 +426,7 @@ static bool NvApi_LoadDefaultProfile(NvDRSSessionHandle hSession)
 			// Update the values
 			// Set the magic 3D Vision enable flag!
 			setNewSettings.version = NVDRS_SETTING_VER;
-			setNewSettings.settingId = 0x701EB457;
+			setNewSettings.settingId = NVAPI_STEREO_WINDOWED_3D_SUPPORT_ID;
 			setNewSettings.settingType = NVDRS_DWORD_TYPE;
 			setNewSettings.u32CurrentValue = 0x00000001;
 			status = NvAPI_DRS_SetSetting(hSession, returnNewProfile, &setNewSettings);
@@ -408,6 +436,29 @@ static bool NvApi_LoadDefaultProfile(NvDRSSessionHandle hSession)
 			setNewSettings.settingId = NVAPI_STEREO_CONVERGENCE_ID;
 			setNewSettings.settingType = NVDRS_DWORD_TYPE;
 			setNewSettings.u32CurrentValue = g_reader->GetDefaultConvergence();
+			status = NvAPI_DRS_SetSetting(hSession, returnNewProfile, &setNewSettings);
+
+			// Set the default rating
+			setNewSettings.version = NVDRS_SETTING_VER;
+			setNewSettings.settingId = NVAPI_STEREO_RATING;
+			setNewSettings.settingType = NVDRS_WSTRING_TYPE;
+			setNewSettings.isCurrentPredefined = 1;
+			setNewSettings.isPredefinedValid = 1;
+			float rating = g_reader->Get3DVisionRating();
+			char rate[50];
+			sprintf_s(rate, "%.1f", rating);
+			NvApi_SetUnicodeString(setNewSettings.wszCurrentValue, rate);
+			NvApi_SetUnicodeString(setNewSettings.wszPredefinedValue, rate);
+			status = NvAPI_DRS_SetSetting(hSession, returnNewProfile, &setNewSettings);
+
+			// Set the comments
+			setNewSettings.version = NVDRS_SETTING_VER;
+			setNewSettings.settingId = NVAPI_STEREO_COMMENTS;
+			setNewSettings.settingType = NVDRS_WSTRING_TYPE;
+			setNewSettings.isCurrentPredefined = 1;
+			setNewSettings.isPredefinedValid = 1;
+			NvApi_SetUnicodeString(setNewSettings.wszCurrentValue, "OpenGL - 3D Vision Wrapper Rated");
+			NvApi_SetUnicodeString(setNewSettings.wszPredefinedValue, "OpenGL - 3D Vision Wrapper Rated");
 			status = NvAPI_DRS_SetSetting(hSession, returnNewProfile, &setNewSettings);
 
 			if (status == NVAPI_OK)
@@ -457,22 +508,15 @@ static void NvApi_SetUnicodeString(NvAPI_UnicodeString& nvstr, const char * cstr
 // Generate the Profile Name
 static void _getProfileName(const char* inExeName, char* outProfileName)
 {
-	const char* toFind = ".exe";
-	const char *posFound = strstr(inExeName, toFind);
-	int pos =  posFound- inExeName;
 	char profileName[255] = "";
-	if (pos != 0)
-	{
-		int len = strlen(inExeName) - (pos / sizeof(char))-1;
-		strncat_s(profileName, inExeName, len);
-		strncat_s(profileName, "-3D Vision Wrapper", 255);
-		strcpy_s(outProfileName, 255, profileName);
-	}
+	strncat_s(profileName, inExeName, 255);
+	strncat_s(profileName, "-3D Vision Wrapper", 255);
+	strcpy_s(outProfileName, 255, profileName);
 }
 ///--------------------------------------------------------------------------------------
 
 // Get the exe name of the current application
-static void _getApplicationName(char *exePath)
+static void _getApplicationName(char *exeName)
 {
 	TCHAR exepath[MAX_PATH + 1];
 	// Get the current exe name
@@ -491,11 +535,11 @@ static void _getApplicationName(char *exePath)
 		}
 
 		// Copy only the exe name
-		strcpy_s(exePath, 255, prevAddress);
+		strcpy_s(exeName, 255, prevAddress);
 
 		// Convert to lower case as used by Nvidia Profiler
-		for (; *exePath; ++exePath)
-			*exePath = (char)tolower(*exePath);
+		for (; *exeName; ++exeName)
+			*exeName = (char)tolower(*exeName);
 	}
 }
 ///--------------------------------------------------------------------------------------
