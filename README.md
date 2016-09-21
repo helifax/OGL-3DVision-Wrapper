@@ -1,6 +1,8 @@
 # OGL-3DVision-Wrapper
 OpenGL Wrapper to enable 3D Vision Support under Windows
 
+This is a now OLD version of the code, that I decided to make Open Source. The latest version of the wrapper is Closed Source unfortunately.
+
 -------------------
 For latest BUILD and DOCUMENTATION go to: http://3dsurroundgaming.com/OGL3DVision.html
 -------------------
